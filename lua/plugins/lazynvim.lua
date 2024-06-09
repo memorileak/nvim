@@ -30,6 +30,10 @@ require("lazy").setup({
     dependencies = { "nvim-lua/plenary.nvim" }
   },
   { "lewis6991/gitsigns.nvim", name = "gitsigns" },
+  {
+    "nvim-pack/nvim-spectre",
+    dependencies = { "nvim-lua/plenary.nvim" }
+  },
   { "williamboman/mason.nvim", name = "mason" },
   { "williamboman/mason-lspconfig.nvim", name = "mason-lspconfig" },
 
