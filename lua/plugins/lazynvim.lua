@@ -32,6 +32,16 @@ require("lazy").setup({
   { "lewis6991/gitsigns.nvim", name = "gitsigns" },
   { "williamboman/mason.nvim", name = "mason" },
   { "williamboman/mason-lspconfig.nvim", name = "mason-lspconfig" },
+
+  -- Autocomplete
+  { "hrsh7th/cmp-nvim-lsp" },
+  { "hrsh7th/cmp-buffer" },
+  { "hrsh7th/cmp-path" },
+  { "hrsh7th/cmp-cmdline" },
+  { "hrsh7th/nvim-cmp" },
+  { "L3MON4D3/LuaSnip" },
+  { "saadparwaiz1/cmp_luasnip" },
+
   { "neovim/nvim-lspconfig", name = "nvim-lspconfig" },
   { "lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {} },
   { "rebelot/kanagawa.nvim", name = "kanagawa", priority = 1000 },
