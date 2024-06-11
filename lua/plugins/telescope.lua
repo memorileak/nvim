@@ -1,24 +1,29 @@
+require('telescope').setup {
+  defaults = {
+    layout_strategy = 'horizontal',
+    layout_config = {}
+  },
+  pickers = {
+    find_files = {
+      hidden = false
+    }
+  }
+}
+
 local builtin = require('telescope.builtin')
 local opts = { noremap = true, silent = true }
+local keymap = vim.keymap.set
 
-vim.keymap.set('n', '<leader>ff', builtin.find_files, opts)
-vim.keymap.set('n', '<leader>fg', builtin.live_grep, opts)
-vim.keymap.set('n', '<leader>fb', builtin.buffers, opts)
-vim.keymap.set('n', '<leader>fh', builtin.help_tags, opts)
-vim.keymap.set('v', '<leader>fw', function()
+keymap('n', '<leader>ff', builtin.find_files, opts)
+keymap('n', '<leader>fg', builtin.live_grep, opts)
+keymap('n', '<leader>fb', builtin.buffers, opts)
+keymap('n', '<leader>fh', builtin.help_tags, opts)
+keymap('v', '<leader>fw', function()
 	local text = vim.getVisualSelection()
 	builtin.live_grep({ default_text = text })
 end, opts)
-
--- local keymap = vim.keymap.set
--- local tb = require('telescope.builtin')
--- local opts = { noremap = true, silent = true }
---
--- keymap('n', '<space>g', ':Telescope current_buffer_fuzzy_find<cr>', opts)
--- keymap('v', '<space>g', function()
--- 	local text = vim.getVisualSelection()
--- 	tb.current_buffer_fuzzy_find({ default_text = text })
--- end, opts)
---
--- keymap('n', '<space>G', ':Telescope live_grep<cr>', opts)
-
+keymap('n', '<leader>fc', builtin.current_buffer_fuzzy_find, opts)
+keymap('v', '<leader>fc', function()
+	local text = vim.getVisualSelection()
+	builtin.current_buffer_fuzzy_find({ default_text = text })
+end, opts)
