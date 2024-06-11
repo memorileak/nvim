@@ -1,1 +1,7 @@
-vim.notify = require("notify")
+local notify = require("notify")
+
+notify.setup({
+  stages = "fade"
+})
+
+vim.notify = notify

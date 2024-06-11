@@ -2,12 +2,7 @@ require("mason").setup({
   PATH = "append",
 })
 
-require("mason-lspconfig").setup({
-  ensure_installed = { 
-    "rust_analyzer", 
-    "tsserver"
-  },
-})
+require("mason-lspconfig").setup()
 
 -- Set up lspconfig.
 -- For autocompletion.
