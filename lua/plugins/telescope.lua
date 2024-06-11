@@ -1,7 +1,19 @@
+local actions = require('telescope.actions')
+
 require('telescope').setup {
   defaults = {
     layout_strategy = 'horizontal',
-    layout_config = {}
+    layout_config = {},
+    mappings = {
+      i = {
+        ["<C-j>"] = actions.move_selection_next,
+        ["<C-k>"] = actions.move_selection_previous,
+      },
+      n = {
+        ["<C-j>"] = actions.move_selection_next,
+        ["<C-k>"] = actions.move_selection_previous,
+      }
+    }
   },
   pickers = {
     find_files = {
