@@ -50,15 +50,14 @@ usercmd('LSlwf', withargs(lspbuf.list_workspace_folders), { nargs = 0, desc = 'v
 usercmd('LSrwf', withargs(lspbuf.remove_workspace_folder), { nargs = 1, desc = 'vim.lsp.buf.remove_workspace_folder' })
 
 local opts = { noremap = true, silent = true }
-local setkeymap = vim.keymap.set
+local keymap = vim.keymap.set
 
-setkeymap('n', 'gd', lspbuf.definition, opts)
-setkeymap('n', 'gr', lspbuf.references, opts)
-setkeymap('n', 'gD', lspbuf.declaration, opts)
-setkeymap('n', 'gI', lspbuf.implementation, opts)
-setkeymap('n', 'gy', lspbuf.type_definition, opts)
-setkeymap('n', 'K', lspbuf.hover, opts)
-setkeymap('n', 'gK', lspbuf.signature_help, opts)
-setkeymap('i', '<c-k>', lspbuf.signature_help, opts)
-setkeymap('n', 'mm', lspbuf.format, opts)
+keymap('n', 'gd', lspbuf.definition, opts)
+keymap('n', 'gr', lspbuf.references, opts)
+keymap('n', 'gD', lspbuf.declaration, opts)
+keymap('n', 'gI', lspbuf.implementation, opts)
+keymap('n', 'gy', lspbuf.type_definition, opts)
+keymap('n', 'K', lspbuf.hover, opts)
+keymap('n', 'gK', lspbuf.signature_help, opts)
+keymap('n', 'mm', lspbuf.format, opts)
 
