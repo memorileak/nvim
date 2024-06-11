@@ -11,3 +11,7 @@ vim.opt.splitright = true
 vim.opt.splitbelow = true
 
 vim.opt.autowriteall = true
+
+vim.opt.foldenable = false
+vim.opt.foldmethod = "manual"
+
