@@ -36,6 +36,7 @@ require("lazy").setup({
   },
   { "williamboman/mason.nvim", name = "mason" },
   { "williamboman/mason-lspconfig.nvim", name = "mason-lspconfig" },
+  { "neovim/nvim-lspconfig", name = "nvim-lspconfig" },
 
   -- Autocomplete
   { "hrsh7th/cmp-nvim-lsp" },
@@ -46,8 +47,8 @@ require("lazy").setup({
   { "L3MON4D3/LuaSnip" },
   { "saadparwaiz1/cmp_luasnip" },
 
-  { "neovim/nvim-lspconfig", name = "nvim-lspconfig" },
   { "lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {} },
+  { "rcarriga/nvim-notify" },
   { "rebelot/kanagawa.nvim", name = "kanagawa", priority = 1000 },
   { "catppuccin/nvim", name = "catppuccin", priority = 1000 }
 })
