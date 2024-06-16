@@ -1,3 +1,5 @@
+vim.api.nvim_set_var("rust_recommended_style", 0)
+
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.autoindent = true
