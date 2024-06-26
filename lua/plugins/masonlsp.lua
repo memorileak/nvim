@@ -18,7 +18,13 @@ require('lspconfig').rust_analyzer.setup {
 }
 
 require('lspconfig').tsserver.setup {
-  capabilities = capabilities
+  capabilities = capabilities,
+  on_attach = function(client)
+    -- Avoid LSP formatting conflicts
+    -- https://github.com/nvimtools/none-ls.nvim/wiki/Avoiding-LSP-formatting-conflicts
+    client.server_capabilities.documentFormattingProvider = false
+    client.server_capabilities.documentRangeFormattingProvider = false
+  end,
 }
 
 function withargs(f)
