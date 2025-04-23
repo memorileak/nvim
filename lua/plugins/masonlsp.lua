@@ -5,7 +5,7 @@ require('mason').setup({
 require('mason-lspconfig').setup({
   ensure_installed = { 
     'rust_analyzer', 
-    'tsserver',
+    'ts_ls',
   },
 })
 
@@ -17,7 +17,7 @@ require('lspconfig').rust_analyzer.setup {
   capabilities = capabilities
 }
 
-require('lspconfig').tsserver.setup {
+require('lspconfig').ts_ls.setup {
   capabilities = capabilities,
   on_attach = function(client)
     -- Avoid LSP formatting conflicts

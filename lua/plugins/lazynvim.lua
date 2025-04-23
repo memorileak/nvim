@@ -66,6 +66,9 @@ require('lazy').setup({
     },
   },
 
+  -- Github Copilot
+  { 'github/copilot.vim' },
+
   { 'lukas-reineke/indent-blankline.nvim', main = 'ibl', opts = {} },
   { 'rcarriga/nvim-notify' },
   { 'rebelot/kanagawa.nvim', name = 'kanagawa', priority = 1000 },

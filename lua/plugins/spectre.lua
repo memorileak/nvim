@@ -1,14 +1,14 @@
-require('spectre').setup({ is_block_ui_break = true })
+-- require('spectre').setup({ is_block_ui_break = true })
 
 -- Build and use oxi if rust & cargo are available
--- require('spectre').setup({
---   is_block_ui_break = true,
---   default = {
---     replace = {
---       cmd = 'oxi'
---     }
---   }
--- })
+require('spectre').setup({
+  is_block_ui_break = true,
+  default = {
+    replace = {
+      cmd = 'oxi'
+    }
+  }
+})
 
 vim.keymap.set('n', '<leader>S', '<cmd>lua require("spectre").toggle()<CR>', {
   noremap = true,
