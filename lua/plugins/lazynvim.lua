@@ -36,8 +36,16 @@ require('lazy').setup({
   },
 
   -- LSP setup
-  { 'williamboman/mason.nvim', name = 'mason' },
-  { 'williamboman/mason-lspconfig.nvim', name = 'mason-lspconfig' },
+  { 'mason-org/mason.nvim', version = '^1.11.0', opts = {} },
+  {
+    'mason-org/mason-lspconfig.nvim',
+    version = '^1.32.0',
+    opts = {},
+    dependencies = {
+        { 'mason-org/mason.nvim', opts = {} },
+        'neovim/nvim-lspconfig',
+    },
+  },
   { 'neovim/nvim-lspconfig', name = 'nvim-lspconfig' },
 
   -- Autocomplete
