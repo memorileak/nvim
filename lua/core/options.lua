@@ -17,3 +17,23 @@ vim.opt.autowriteall = true
 vim.opt.foldenable = false
 vim.opt.foldmethod = "manual"
 
+-- Put anything you want to happen only in Neovide here
+if vim.g.neovide then
+  vim.opt.guifont = "JetBrainsMono Nerd Font:h9"
+  vim.opt.linespace = 0
+  -- vim.g.neovide_text_gamma = 0.0
+  -- vim.g.neovide_text_contrast = 0.5
+
+  -- Animation when resizing panes
+  vim.g.neovide_position_animation_length = 0.1
+
+  -- Animation when moving the cursor
+  vim.g.neovide_cursor_animation_length = 0.05
+  vim.g.neovide_cursor_trail_size = 0
+  vim.g.neovide_cursor_animate_in_insert_mode = true
+  vim.g.neovide_cursor_animate_command_line = true
+
+  -- Animation when scrolling
+  -- vim.g.neovide_scroll_animation_far_lines = 0
+  vim.g.neovide_scroll_animation_length = 0.1
+end
