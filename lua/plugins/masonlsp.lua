@@ -78,7 +78,7 @@ usercmd('LSdec', withargs(lspbuf.declaration), {
   desc = 'vim.lsp.buf.declaration'
 })
 
-usercmd('LStph', withargs(lspbuf.typehierarchy), {
+usercmd('LShie', withargs(lspbuf.typehierarchy), {
   nargs = "?",
   desc = 'vim.lsp.buf.typehierarchy'
 }) -- subtypes, supertypes
@@ -103,7 +103,7 @@ usercmd('LSsig', withargs(lspbuf.signature_help), {
   desc = 'vim.lsp.buf.signature_help'
 })
 
-usercmd('LSdsy', withargs(lspbuf.document_symbol), {
+usercmd('LSsym', withargs(lspbuf.document_symbol), {
   nargs = 0,
   desc = 'vim.lsp.buf.document_symbol'
 })
@@ -113,17 +113,17 @@ usercmd('LSexe', withargs(lspbuf.execute_command), {
   desc = 'vim.lsp.buf.execute_command'
 })
 
-usercmd('LStpd', withargs(lspbuf.type_definition), {
+usercmd('LStyp', withargs(lspbuf.type_definition), {
   nargs = 0,
   desc = 'vim.lsp.buf.type_definition'
 })
 
-usercmd('LScrf', withargs(lspbuf.clear_references), {
+usercmd('LSclr', withargs(lspbuf.clear_references), {
   nargs = 0,
   desc = 'vim.lsp.buf.clear_references'
 })
 
-usercmd('LSwsy', withargs(lspbuf.workspace_symbol), {
+usercmd('LSgym', withargs(lspbuf.workspace_symbol), { -- [g]lobal s[ym]bol 
   nargs = 1,
   desc = 'vim.lsp.buf.workspace_symbol'
 })
@@ -151,15 +151,28 @@ usercmd('LSrwf', withargs(lspbuf.remove_workspace_folder), {
 local opts = { noremap = true, silent = true }
 local keymap = vim.keymap.set
 
-keymap('n', 'gd', lspbuf.definition, opts)
-keymap('n', 'gr', lspbuf.references, opts)
-keymap('n', 'gD', lspbuf.declaration, opts)
-keymap('n', 'gI', lspbuf.implementation, opts)
-keymap('n', 'gy', lspbuf.type_definition, opts)
-keymap('n', 'K', lspbuf.hover, opts)
-keymap('n', 'gK', lspbuf.signature_help, opts)
-keymap('n', 'gb', lspbuf.format, opts)
-keymap('n', '[d', diag.goto_prev, opts)
-keymap('n', ']d', diag.goto_next, opts)
-keymap('n', '<C-w>d', diag.open_float, opts)
+keymap('n', 'gb', lspbuf.format, opts) -- [g]o [b]eauty (and it's easy to press)
+keymap('n', '<leader>vh', lspbuf.document_highlight, opts) -- [v]iew [h]ighlights
+keymap('n', '<leader>vd', diag.open_float, opts) -- [v]iew [d]iagnostic
+
+-- Global Default Keymaps
+-- grn: (Normal mode) Calls vim.lsp.buf.rename(). Used to rename the symbol under the cursor.
+-- gra: (Normal and Visual mode) Calls vim.lsp.buf.code_action(). Opens a menu of available code actions at the cursor or for the selected range.
+-- grr: (Normal mode) Calls vim.lsp.buf.references(). Lists all references to the symbol under the cursor in the quickfix window.
+-- gri: (Normal mode) Calls vim.lsp.buf.implementation(). Lists all implementations for the symbol under the cursor in the quickfix window.
+-- grt: (Normal mode) Calls vim.lsp.buf.type_definition(). Jumps to the type definition of the symbol under the cursor.
+-- gO: (Normal mode) Calls vim.lsp.buf.document_symbol(). Lists all symbols (functions, variables, etc.) in the current buffer.
+-- <C-S> (Ctrl-S): (Insert mode) Calls vim.lsp.buf.signature_help(). Displays signature help for the function/method being called.
+-- an and in: (Visual mode) These are for incremental selections, using vim.lsp.buf.selection_range(). an selects the "a" (around) current node, in selects the "i" (inside) current node. This is often used with plugins like nvim-treesitter-textobjects for more powerful text selection.
+--
+-- Buffer-Local Default Behaviors/Options
+-- K: (Normal mode) Calls vim.lsp.buf.hover(). Displays hover information/documentation for the symbol under the cursor in a floating window. (Note: This overrides K's traditional behavior of keywordprg if that's not explicitly set).
+-- gd: (Normal mode) When tagfunc is set to vim.lsp.tagfunc(), which it is by default when LSP attaches, gd (go to definition) will use the LSP server.
+-- <C-]>: (Normal mode) Jumps to the definition of the symbol under the cursor, also utilizing the LSP's tagfunc.
+-- <C-W>] and <C-W>}: These are related to jumping to tags in new windows, also using tagfunc.
+-- [d: (Normal mode) Calls vim.diagnostic.goto_prev(). Jumps to the previous diagnostic in the current file.
+-- ]d: (Normal mode) Calls vim.diagnostic.goto_next(). Jumps to the next diagnostic in the current file.
+-- omnifunc: This option is set to vim.lsp.omnifunc(), allowing you to trigger completion with <C-X><C-O> in insert mode.
+-- formatexpr: This option is set to vim.lsp.formatexpr(), which means you can format lines or visual selections using the built-in gq operator.
+
 
