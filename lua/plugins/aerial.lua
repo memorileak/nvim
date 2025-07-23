@@ -54,7 +54,7 @@ require('aerial').setup({
 
   -- When you fold code with za, zo, or zc, update the aerial tree as well.
   -- Only works when manage_folds = true
-  link_folds_to_tree = true,
+  link_folds_to_tree = false,
 
   -- Fold code when you open/collapse symbols in the tree.
   -- Only works when manage_folds = true
