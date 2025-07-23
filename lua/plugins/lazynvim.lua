@@ -14,7 +14,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require('lazy').setup({
-  {"nvim-treesitter/nvim-treesitter", branch = 'master', lazy = false, build = ":TSUpdate"},
+  {'nvim-treesitter/nvim-treesitter', branch = 'master', lazy = false, build = ':TSUpdate'},
   {
     'nvim-tree/nvim-tree.lua',
     version = '*',
@@ -26,6 +26,7 @@ require('lazy').setup({
       require('nvim-tree').setup {}
     end,
   },
+  { 'nvim-tree/nvim-web-devicons', opts = {} },
   {
     'nvim-telescope/telescope.nvim', tag = '0.1.8',
     dependencies = { 'nvim-lua/plenary.nvim' }
@@ -34,6 +35,19 @@ require('lazy').setup({
   {
     'nvim-pack/nvim-spectre',
     dependencies = { 'nvim-lua/plenary.nvim' }
+  },
+
+  -- Code outline navigation
+  {
+    'stevearc/aerial.nvim',
+    opts = {
+      backends = { 'treesitter', 'lsp' },
+    },
+    -- Optional dependencies
+    dependencies = {
+       'nvim-treesitter/nvim-treesitter',
+       'nvim-tree/nvim-web-devicons'
+    },
   },
 
   -- LSP setup
