@@ -46,6 +46,19 @@ require('aerial').setup({
   -- Function to run when Aerial is attached to a buffer.
   -- on_attach = function(bufnr)
   -- end,
+
+  -- Use symbol tree for folding. Set to true or false to enable/disable
+  -- Set to "auto" to manage folds if your previous foldmethod was 'manual'
+  -- This can be a filetype map (see :help aerial-filetype-map)
+  manage_folds = true,
+
+  -- When you fold code with za, zo, or zc, update the aerial tree as well.
+  -- Only works when manage_folds = true
+  link_folds_to_tree = true,
+
+  -- Fold code when you open/collapse symbols in the tree.
+  -- Only works when manage_folds = true
+  link_tree_to_folds = true,
 })
 
 vim.keymap.set('n', '<leader>a', '<cmd>AerialToggle!left<CR>', {
