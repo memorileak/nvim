@@ -8,8 +8,9 @@ require("fzf-lua").setup({
     -- the defaults, to inherit from the defaults change [1] from `false` to `true`
     files = {
       true,
-      ["ctrl-q"]       = actions.file_sel_to_qf,
-      ["ctrl-Q"]       = actions.file_sel_to_ll,
+      ["ctrl-x"]      = actions.file_split,
+      ["ctrl-q"]      = actions.file_sel_to_qf,
+      ["ctrl-Q"]      = actions.file_sel_to_ll,
       -- true,        -- uncomment to inherit all the below in your custom config
       -- Pickers inheriting these actions:
       --   files, git_files, git_status, grep, lsp, oldfiles, quickfix, loclist,
