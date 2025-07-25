@@ -27,9 +27,15 @@ require('lazy').setup({
     end,
   },
   { 'nvim-tree/nvim-web-devicons', opts = {} },
+  -- {
+  --   'nvim-telescope/telescope.nvim', tag = '0.1.8',
+  --   dependencies = { 'nvim-lua/plenary.nvim' }
+  -- },
+  --
   {
-    'nvim-telescope/telescope.nvim', tag = '0.1.8',
-    dependencies = { 'nvim-lua/plenary.nvim' }
+    "ibhagwan/fzf-lua",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = {},
   },
   { 'lewis6991/gitsigns.nvim', name = 'gitsigns' },
   {
