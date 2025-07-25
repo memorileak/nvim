@@ -1,16 +1,23 @@
-local fzflua = require("fzf-lua")
+local fzflua = require('fzf-lua')
 local actions = fzflua.actions
 
-require("fzf-lua").setup({
-  "hide",
+require('fzf-lua').setup({
+  'hide',
+  keymap = {
+    fzf = {
+      true,
+      ['ctrl-A']      = 'beginning-of-line',
+      ['ctrl-a']      = 'toggle-all',
+    },
+  },
   actions = {
     -- Below are the default actions, setting any value in these tables will override
     -- the defaults, to inherit from the defaults change [1] from `false` to `true`
     files = {
       true,
-      ["ctrl-x"]      = actions.file_split,
-      ["ctrl-q"]      = actions.file_sel_to_qf,
-      ["ctrl-Q"]      = actions.file_sel_to_ll,
+      ['ctrl-x']      = actions.file_split,
+      ['ctrl-q']      = actions.file_sel_to_qf,
+      ['ctrl-Q']      = actions.file_sel_to_ll,
       -- true,        -- uncomment to inherit all the below in your custom config
       -- Pickers inheriting these actions:
       --   files, git_files, git_status, grep, lsp, oldfiles, quickfix, loclist,
@@ -18,15 +25,15 @@ require("fzf-lua").setup({
       -- `file_edit_or_qf` opens a single selection or sends multiple selection to quickfix
       -- replace `enter` with `file_edit` to open all files/bufs whether single or multiple
       -- replace `enter` with `file_switch_or_edit` to attempt a switch in current tab first
-      -- ["enter"]       = actions.file_edit_or_qf,
-      -- ["ctrl-s"]      = actions.file_split,
-      -- ["ctrl-v"]      = actions.file_vsplit,
-      -- ["ctrl-t"]      = actions.file_tabedit,
-      -- ["alt-q"]       = actions.file_sel_to_qf,
-      -- ["alt-Q"]       = actions.file_sel_to_ll,
-      -- ["alt-i"]       = actions.toggle_ignore,
-      -- ["alt-h"]       = actions.toggle_hidden,
-      -- ["alt-f"]       = actions.toggle_follow,
+      -- ['enter']       = actions.file_edit_or_qf,
+      -- ['ctrl-s']      = actions.file_split,
+      -- ['ctrl-v']      = actions.file_vsplit,
+      -- ['ctrl-t']      = actions.file_tabedit,
+      -- ['alt-q']       = actions.file_sel_to_qf,
+      -- ['alt-Q']       = actions.file_sel_to_ll,
+      -- ['alt-i']       = actions.toggle_ignore,
+      -- ['alt-h']       = actions.toggle_hidden,
+      -- ['alt-f']       = actions.toggle_follow,
     },
   }
 })
