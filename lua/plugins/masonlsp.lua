@@ -38,6 +38,10 @@ local usercmd = vim.api.nvim_create_user_command
 local lspbuf = vim.lsp.buf
 local diag = vim.diagnostic
 
+diag.config({
+  severity_sort = true,
+})
+
 usercmd('LShov', withargs(lspbuf.hover), { 
   nargs = 0,
   desc = 'vim.lsp.buf.hover'
