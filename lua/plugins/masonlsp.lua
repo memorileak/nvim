@@ -13,11 +13,11 @@ require('mason-lspconfig').setup({
 -- For autocompletion.
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
-require('lspconfig').rust_analyzer.setup {
+require('lspconfig').rust_analyzer.setup({
   capabilities = capabilities
-}
+})
 
-require('lspconfig').ts_ls.setup {
+require('lspconfig').ts_ls.setup({
   capabilities = capabilities,
   on_attach = function(client)
     -- Avoid LSP formatting conflicts
@@ -25,7 +25,7 @@ require('lspconfig').ts_ls.setup {
     client.server_capabilities.documentFormattingProvider = false
     client.server_capabilities.documentRangeFormattingProvider = false
   end,
-}
+})
 
 function withargs(f)
   return function (opts) 
