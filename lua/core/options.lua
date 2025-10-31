@@ -24,8 +24,8 @@ vim.opt.foldmethod = "manual"
 if vim.g.neovide then
   vim.opt.guifont = "JetBrainsMono Nerd Font:h9"
   vim.opt.linespace = 0
-  -- vim.g.neovide_text_gamma = 0.0
-  -- vim.g.neovide_text_contrast = 0.5
+  vim.g.neovide_text_gamma = 1.0
+  vim.g.neovide_text_contrast = 1.0
 
   -- Animation when resizing panes
   vim.g.neovide_position_animation_length = 0.00
