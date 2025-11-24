@@ -1,5 +1,5 @@
 require('mason').setup({
-  PATH = 'append',
+  PATH = 'skip',
 })
 
 require('mason-lspconfig').setup({
@@ -12,12 +12,10 @@ require('mason-lspconfig').setup({
 -- Set up lspconfig.
 -- For autocompletion.
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
-
-require('lspconfig').rust_analyzer.setup({
-  capabilities = capabilities
+vim.lsp.config('rust_analyzer', {
+  capabilities = capabilities,
 })
-
-require('lspconfig').ts_ls.setup({
+vim.lsp.config('ts_ls', {
   capabilities = capabilities,
   on_attach = function(client)
     -- Avoid LSP formatting conflicts

@@ -6,8 +6,22 @@ require('fzf-lua').setup({
   keymap = {
     fzf = {
       true,
-      ['ctrl-A']      = 'beginning-of-line',
-      ['ctrl-a']      = 'toggle-all',
+      -- fzf '--bind=' options
+      -- true,        -- uncomment to inherit all the below in your custom config
+      -- ["ctrl-z"]      = "abort",
+      -- ["ctrl-u"]      = "unix-line-discard",
+      -- ["ctrl-f"]      = "half-page-down",
+      -- ["ctrl-b"]      = "half-page-up",
+      -- ["ctrl-a"]      = "beginning-of-line",
+      -- ["ctrl-e"]      = "end-of-line",
+      -- ["alt-a"]       = "toggle-all",
+      -- ["alt-g"]       = "first",
+      -- ["alt-G"]       = "last",
+      -- Only valid with fzf previewers (bat/cat/git/etc)
+      -- ["f3"]          = "toggle-preview-wrap",
+      -- ["f4"]          = "toggle-preview",
+      -- ["shift-down"]  = "preview-page-down",
+      -- ["shift-up"]    = "preview-page-up",
     },
   },
   actions = {
@@ -16,8 +30,6 @@ require('fzf-lua').setup({
     files = {
       true,
       ['ctrl-x']      = actions.file_split,
-      ['ctrl-q']      = actions.file_sel_to_qf,
-      ['ctrl-l']      = actions.file_sel_to_ll,
       -- true,        -- uncomment to inherit all the below in your custom config
       -- Pickers inheriting these actions:
       --   files, git_files, git_status, grep, lsp, oldfiles, quickfix, loclist,
