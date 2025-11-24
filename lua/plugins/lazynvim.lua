@@ -58,7 +58,7 @@ require('lazy').setup({
 
   -- LSP setup
   { 'neovim/nvim-lspconfig', name = 'nvim-lspconfig' },
-  { 'mason-org/mason.nvim', version = '^2.0.1' },
+  { 'mason-org/mason.nvim', version = '^2.1.0' },
   {
     'mason-org/mason-lspconfig.nvim',
     version = '^2.1.0',
