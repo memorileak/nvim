@@ -56,7 +56,7 @@ local keymap = vim.keymap.set
 
 keymap('n', '<leader>ff', fzflua.files, opts)
 keymap('n', '<leader>fi', fzflua.git_files, opts)
-keymap('n', '<leader>fg', fzflua.live_grep, opts)
+keymap('n', '<leader>fG', fzflua.live_grep, opts)
 keymap('n', '<leader>fb', fzflua.buffers, opts)
 keymap('n', '<leader>ft', fzflua.tagstack, opts)
 
@@ -81,6 +81,12 @@ keymap('n', '<leader>fh', function()
     --   This ensures files typically ignored by version control are included in the search.
     -- --follow: Follows symbolic links.
     -- --color=never: Disables color output, which can sometimes interfere with fzf.
+  })
+end, opts)
+
+keymap('n', '<leader>fg', function()
+  fzflua.live_grep({
+    rg_opts = '-F ' .. defaults.grep.rg_opts -- Use -F for fixed string search
   })
 end, opts)
 
