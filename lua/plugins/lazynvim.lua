@@ -14,7 +14,30 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require('lazy').setup({
-  {'nvim-treesitter/nvim-treesitter', branch = 'master', lazy = false, build = ':TSUpdate'},
+  {
+    'nvim-treesitter/nvim-treesitter',
+    branch = 'main', -- Explicitly track the new rewritten branch
+    build = ':TSUpdate',
+    config = function()
+      -- Use the new top-level setup function
+      require('nvim-treesitter').setup({
+        -- Parsers you want installed automatically via the CLI
+        ensure_installed = { 
+          -- Essential Neovim system parsers
+          'lua', 'vim', 'vimdoc', 'query', 'markdown', 'markdown_inline',
+          -- Default development languages
+          'rust', 'javascript', 'typescript', 'python', 
+          'html', 'css', 'json', 'yaml', 'toml', 'bash', 'dockerfile',
+        },
+        -- Automatically install missing parsers when opening new filetypes
+        auto_install = true,
+        -- Enable the native Neovim 0.12 engine
+        highlight = { 
+          enable = true,
+        },
+      })
+    end,
+  },
   {
     'nvim-tree/nvim-tree.lua',
     version = '*',
