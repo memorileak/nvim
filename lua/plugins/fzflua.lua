@@ -1,8 +1,8 @@
-local fzflua = require('fzf-lua')
+local fzflua = require("fzf-lua")
 local actions = fzflua.actions
 
-require('fzf-lua').setup({
-  'hide',
+require("fzf-lua").setup({
+  "hide",
   keymap = {
     fzf = {
       true,
@@ -29,7 +29,7 @@ require('fzf-lua').setup({
     -- the defaults, to inherit from the defaults change [1] from `false` to `true`
     files = {
       true,
-      ['ctrl-x']      = actions.file_split,
+      ["ctrl-x"] = actions.file_split,
       -- true,        -- uncomment to inherit all the below in your custom config
       -- Pickers inheriting these actions:
       --   files, git_files, git_status, grep, lsp, oldfiles, quickfix, loclist,
@@ -47,54 +47,64 @@ require('fzf-lua').setup({
       -- ['alt-h']       = actions.toggle_hidden,
       -- ['alt-f']       = actions.toggle_follow,
     },
-  }
+  },
 })
 
 local defaults = fzflua.defaults
 local opts = { noremap = true, silent = true }
 local keymap = vim.keymap.set
 
-keymap('n', '<leader>ff', fzflua.files, opts)
-keymap('n', '<leader>fi', fzflua.git_files, opts)
-keymap('n', '<leader>fG', fzflua.live_grep, opts)
-keymap('n', '<leader>fb', fzflua.buffers, opts)
-keymap('n', '<leader>ft', fzflua.tagstack, opts)
+keymap("n", "<leader>ff", fzflua.files, opts)
+keymap("n", "<leader>fi", fzflua.git_files, opts)
+keymap("n", "<leader>fG", fzflua.live_grep, opts)
+keymap("n", "<leader>fb", fzflua.buffers, opts)
 
--- LSP related keymaps
-keymap('n', '<leader>fd', fzflua.lsp_definitions, opts)
-keymap('n', '<leader>fy', fzflua.lsp_typedefs, opts)
-keymap('n', '<leader>fr', fzflua.lsp_references, opts)
-keymap('n', '<leader>fm', fzflua.lsp_implementations, opts)
-keymap('n', '<leader>fs', fzflua.lsp_document_symbols, opts)
-keymap('n', '<leader>fS', fzflua.lsp_workspace_symbols, opts)
-keymap('n', '<leader>fci', fzflua.lsp_incoming_calls, opts)
-keymap('n', '<leader>fco', fzflua.lsp_outgoing_calls, opts)
-keymap('n', '<leader>fe', fzflua.diagnostics_document, opts)
-keymap('n', '<leader>fE', fzflua.diagnostics_workspace, opts)
+-- Find tags for the current project
+keymap("n", "<leader>ft", fzflua.tags, opts)
 
--- Custom functions
-keymap('n', '<leader>fh', function()
+-- Find tags for the current buffer
+keymap("n", "<leader>bt", fzflua.btags, opts)
+
+-- Find tags for the current word/WORD under the cursor
+keymap("n", "<leader>tw", function()
+  fzflua.tags({ query = vim.fn.expand("<cword>") })
+end, opts)
+keymap("n", "<leader>tW", function()
+  fzflua.tags({ query = vim.fn.expand("<cWORD>") })
+end, opts)
+
+-- Grep tags for the current word/WORD under the cursor
+keymap("n", "<leader>tgw", fzflua.tags_grep_cword, opts)
+keymap("n", "<leader>tgW", fzflua.tags_grep_cWORD, opts)
+
+-- Grep tags for the visually selected text
+keymap("v", "<leader>tg", fzflua.tags_grep_visual, opts)
+
+-- Find files in the current project, including hidden files and files ignored by version control
+keymap("n", "<leader>fh", function()
   fzflua.files({
-    rg_opts = '--hidden --no-ignore-vcs --follow --color=never '
+    rg_opts = "--hidden --no-ignore-vcs --follow --color=never ",
     -- --hidden: Includes hidden files and directories in the search.
-    -- --no-ignore-vcs: Disables the use of VCS ignore files (e.g., .gitignore, .hgignore). 
+    -- --no-ignore-vcs: Disables the use of VCS ignore files (e.g., .gitignore, .hgignore).
     --   This ensures files typically ignored by version control are included in the search.
     -- --follow: Follows symbolic links.
     -- --color=never: Disables color output, which can sometimes interfere with fzf.
   })
 end, opts)
 
-keymap('n', '<leader>fg', function()
+-- Live grep with fixed string search (no regex interpretation)
+keymap("n", "<leader>fg", function()
   fzflua.live_grep({
-    rg_opts = '-F ' .. defaults.grep.rg_opts -- Use -F for fixed string search
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
   })
 end, opts)
 
-keymap('v', '<leader>fw', function()
-	local text = vim.getVisualSelection()
+-- Live grep with fixed string search for the visually selected text in visual mode
+keymap("v", "<leader>fw", function()
+  local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,
-    rg_opts = '-F ' .. defaults.grep.rg_opts -- Use -F for fixed string search
+    no_esc = true,
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
   })
 end, opts)
-
