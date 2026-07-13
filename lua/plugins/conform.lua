@@ -14,6 +14,7 @@ return {
   },
   opts = {
     formatters_by_ft = {
+      sh = { "shfmt" },
       lua = { "stylua" },
       rust = { "rustfmt" },
       -- Using stop_after_first: if prettierd is there then prettier won't be used

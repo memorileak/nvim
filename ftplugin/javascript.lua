@@ -1,9 +1,7 @@
 vim.cmd("compiler eslint")
 
-local pipe_head = [[ \| head -n -1]] -- Remove the last line.
-local pipe_rg = [[ \| rg -v '^\s*$']] -- Remove empty lines.
+local config_dir = vim.fn.stdpath("config")
+local formatter_path = config_dir .. "/utils/eslint-formatter.js"
 
-vim.opt_local.makeprg = "npx --no-install eslint -f $(npm root -g)/eslint-formatter-compact/index.js ."
-  .. pipe_head
-  .. pipe_rg
-vim.opt_local.errorformat = "%f: line %l\\, col %c\\, %t%*\\a - %m"
+vim.opt_local.makeprg = "npx --no-install eslint -f " .. formatter_path .. " ."
+vim.opt_local.errorformat = [[%f(%l\,%c): %t : %m]]

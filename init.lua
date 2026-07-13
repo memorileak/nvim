@@ -1,6 +1,7 @@
 require("core.functions")
 require("core.options")
 require("core.keymaps")
+require("core.ctags")
 require("core.linting")
 
 require("plugins.lazynvim")
