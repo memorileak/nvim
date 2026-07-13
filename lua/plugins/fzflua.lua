@@ -59,26 +59,28 @@ keymap("n", "<leader>fi", fzflua.git_files, opts)
 keymap("n", "<leader>fG", fzflua.live_grep, opts)
 keymap("n", "<leader>fb", fzflua.buffers, opts)
 
--- Find tags for the current project
-keymap("n", "<leader>ft", fzflua.tags, opts)
-
--- Find tags for the current buffer
-keymap("n", "<leader>bt", fzflua.btags, opts)
-
--- Find tags for the current word/WORD under the cursor
-keymap("n", "<leader>tw", function()
+-- Find tags for the current word/WORD under the cursor in the current project
+keymap("n", "<leader>ft", function()
   fzflua.tags({ query = vim.fn.expand("<cword>") })
 end, opts)
-keymap("n", "<leader>tW", function()
+keymap("n", "<leader>fT", function()
   fzflua.tags({ query = vim.fn.expand("<cWORD>") })
 end, opts)
 
+-- Find tags for the current word/WORD under the cursor in the current buffer
+keymap("n", "<leader>bt", function()
+  fzflua.btags({ query = vim.fn.expand("<cword>") })
+end, opts)
+keymap("n", "<leader>bT", function()
+  fzflua.btags({ query = vim.fn.expand("<cWORD>") })
+end, opts)
+
 -- Grep tags for the current word/WORD under the cursor
-keymap("n", "<leader>tgw", fzflua.tags_grep_cword, opts)
-keymap("n", "<leader>tgW", fzflua.tags_grep_cWORD, opts)
+keymap("n", "<leader>wt", fzflua.tags_grep_cword, opts)
+keymap("n", "<leader>wT", fzflua.tags_grep_cWORD, opts)
 
 -- Grep tags for the visually selected text
-keymap("v", "<leader>tg", fzflua.tags_grep_visual, opts)
+keymap("v", "<leader>wt", fzflua.tags_grep_visual, opts)
 
 -- Find files in the current project, including hidden files and files ignored by version control
 keymap("n", "<leader>fh", function()

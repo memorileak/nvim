@@ -67,14 +67,16 @@ local function apply_highlights(bufnr)
 
   for lnum, items in pairs(qf_cache[bufnr]) do
     for _, item in ipairs(items) do
-      vim.api.nvim_buf_add_highlight(
-        bufnr,
-        ns_id,
-        get_hl_group(item.type),
-        lnum - 1,
-        item.start_col,
-        item.end_col
-      )
+      if lnum > 0 then
+        vim.api.nvim_buf_add_highlight(
+          bufnr,
+          ns_id,
+          get_hl_group(item.type),
+          lnum - 1,
+          item.start_col,
+          item.end_col
+        )
+      end
     end
   end
 end
