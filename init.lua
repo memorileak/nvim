@@ -13,4 +13,6 @@ require("plugins.aerial")
 require("plugins.gitsigns")
 require("plugins.autocomplete")
 require("plugins.nvimnotify")
+
+-- Colorscheme must be the last one.
 require("plugins.colorscheme")

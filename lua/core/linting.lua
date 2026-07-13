@@ -8,6 +8,9 @@ local last_qf_id = -1
 -- Function to determine the highlight group based on the quickfix type (severity)
 local function get_hl_group(qf_type)
   local t = string.upper(qf_type or "")
+  if t == "E" then
+    return "DiagnosticUnderlineError"
+  end
   if t == "W" then
     return "DiagnosticUnderlineWarn"
   end
@@ -17,7 +20,7 @@ local function get_hl_group(qf_type)
   if t == "H" then
     return "DiagnosticUnderlineHint"
   end
-  return "DiagnosticUnderlineError" -- Default fallback
+  return "DiagnosticUnderlineHighlight" -- Default fallback
 end
 
 -- Core optimization: Only parse the Quickfix list if it has changed
@@ -39,7 +42,7 @@ local function update_qf_cache()
       qf_cache[item.bufnr][item.lnum] = qf_cache[item.bufnr][item.lnum] or {}
 
       local start_col = math.max(0, item.col - 1)
-      local end_col = start_col + 3
+      local end_col = start_col + 6
       if item.end_col and item.end_col > 0 then
         end_col = item.end_col - 1
       end
