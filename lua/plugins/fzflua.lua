@@ -48,6 +48,14 @@ require("fzf-lua").setup({
       -- ['alt-f']       = actions.toggle_follow,
     },
   },
+  tags = {
+    -- This forces fzf to allow multiple selections (--multi)
+    fzf_opts = { ["--multi"] = true },
+  },
+  btags = {
+    -- This forces fzf to allow multiple selections (--multi)
+    fzf_opts = { ["--multi"] = true },
+  },
 })
 
 local defaults = fzflua.defaults
