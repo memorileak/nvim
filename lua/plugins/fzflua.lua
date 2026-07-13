@@ -102,10 +102,54 @@ keymap("n", "<leader>fg", function()
 end, opts)
 
 -- Live grep with fixed string search for the visually selected text in visual mode
+keymap("n", "<leader>fw", function()
+  fzflua.live_grep({
+    search = vim.fn.expand("<cword>"),
+    no_esc = true,
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+  })
+end, opts)
+
+keymap("v", "<leader>fW", function()
+  fzflua.live_grep({
+    search = vim.fn.expand("<cWORD>"),
+    no_esc = true,
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+  })
+end, opts)
+
 keymap("v", "<leader>fw", function()
   local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,
+    no_esc = true,
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+  })
+end, opts)
+
+keymap("n", "<leader>bw", function()
+  fzflua.live_grep({
+    search = vim.fn.expand("<cword>"),
+    search_dirs = { vim.fn.expand("%:p") },
+    no_esc = true,
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+  })
+end, opts)
+
+keymap("n", "<leader>bW", function()
+  fzflua.live_grep({
+    search = vim.fn.expand("<cWORD>"),
+    search_dirs = { vim.fn.expand("%:p") },
+    no_esc = true,
+    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+  })
+end, opts)
+
+keymap("v", "<leader>bw", function()
+  local text = vim.getVisualSelection()
+  fzflua.live_grep({
+    search = text,
+    search_dirs = { vim.fn.expand("%:p") },
     no_esc = true,
     rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
   })
