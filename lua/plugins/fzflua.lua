@@ -138,7 +138,7 @@ end, opts)
 keymap("n", "<leader>bw", function()
   fzflua.live_grep({
     search = vim.fn.expand("<cword>"),
-    search_dirs = { vim.fn.expand("%:p") },
+    search_paths = { vim.fn.expand("%:p") },
     no_esc = true,
     rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
   })
@@ -147,7 +147,7 @@ end, opts)
 keymap("n", "<leader>bW", function()
   fzflua.live_grep({
     search = vim.fn.expand("<cWORD>"),
-    search_dirs = { vim.fn.expand("%:p") },
+    search_paths = { vim.fn.expand("%:p") },
     no_esc = true,
     rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
   })
@@ -157,7 +157,7 @@ keymap("v", "<leader>bw", function()
   local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,
-    search_dirs = { vim.fn.expand("%:p") },
+    search_paths = { vim.fn.expand("%:p") },
     no_esc = true,
     rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
   })
