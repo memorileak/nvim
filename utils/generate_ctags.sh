@@ -3,7 +3,7 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-EXT_FILE="./.tags_ext"
+EXT_FILE="./.tags.ext"
 FD_ARGS=("-t" "f")
 
 # Check if the extensions file exists and is not empty
