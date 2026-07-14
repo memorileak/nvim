@@ -29,6 +29,6 @@ fi
 # -f .tags explicitly names the output file (overwriting it)
 echo "Generating tags file for ${#files[@]} files..."
 
-printf "%s\n" "${files[@]}" | ctags -L - -f .tags
+printf "%s\n" "${files[@]}" | ctags --quiet -L - -f .tags
 
 echo "Tags file '.tags' successfully generated."
