@@ -17,9 +17,8 @@ fi
 # Get both staged and unstaged changed files
 CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null && git diff --cached --name-only HEAD 2>/dev/null | sort -u)
 
-# Filter for JS/TS/JSX/TSX files
-# FILTERED_FILES=$(echo "$CHANGED_FILES" | grep -E '\.(js|jsx|ts|tsx)$' | sort -u)
-FILTERED_FILES=$CHANGED_FILES
+# Filter for JavaScript/TypeScript files
+FILTERED_FILES=$(echo "$CHANGED_FILES" | rg -e '\.(js|jsx|mjs|cjs|ts|tsx|mts|cts|d\.ts|d\.mts|d\.cts)$' | sort -u)
 
 # If we have changed files, use them; otherwise fall back to current file
 if [ -n "$FILTERED_FILES" ]; then

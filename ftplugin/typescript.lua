@@ -11,5 +11,6 @@ vim.opt_local.makeprg = "sh -c 'npx --no-install tsc --noEmit --pretty false; fi
   .. "); npx --no-install eslint -f "
   .. vim.fn.shellescape(formatter)
   .. " $files'"
+  .. [[ \| rg -v '^\s*$']] -- Filter out empty lines from the output
 
 vim.opt_local.errorformat = [[%f(%l\,%c): %t%*[^ ] %m,%f(%l\,%c): %t : %m]]
