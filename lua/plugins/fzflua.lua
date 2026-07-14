@@ -67,6 +67,9 @@ keymap("n", "<leader>fi", fzflua.git_files, opts)
 keymap("n", "<leader>fG", fzflua.live_grep, opts)
 keymap("n", "<leader>fb", fzflua.buffers, opts)
 
+-- Find treesitter symbols in the current buffer
+keymap("n", "<leader>bs", fzflua.treesitter, opts)
+
 -- Find tags for the current word/WORD under the cursor in the current project
 keymap("n", "<leader>ft", function()
   fzflua.tags({ query = vim.fn.expand("<cword>") })
@@ -93,12 +96,7 @@ keymap("v", "<leader>wt", fzflua.tags_grep_visual, opts)
 -- Find files in the current project, including hidden files and files ignored by version control
 keymap("n", "<leader>fh", function()
   fzflua.files({
-    rg_opts = "--hidden --no-ignore-vcs --follow --color=never ",
-    -- --hidden: Includes hidden files and directories in the search.
-    -- --no-ignore-vcs: Disables the use of VCS ignore files (e.g., .gitignore, .hgignore).
-    --   This ensures files typically ignored by version control are included in the search.
-    -- --follow: Follows symbolic links.
-    -- --color=never: Disables color output, which can sometimes interfere with fzf.
+    fd_opts = "--type f --hidden --no-ignore --follow --color=never ",
   })
 end, opts)
 
