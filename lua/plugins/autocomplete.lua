@@ -20,8 +20,6 @@ cmp.setup({
     -- High priority sources
     { name = "path" },
     { name = "buffer" },
-  }, {
-    -- Low priority sources
     {
       name = "tags",
       option = {
@@ -30,6 +28,8 @@ cmp.setup({
         max_items = 15,
       },
     },
+  }, {
+    -- Low priority sources
   }),
   formatting = {
     format = function(entry, vim_item)
