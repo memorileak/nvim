@@ -49,12 +49,16 @@ require("fzf-lua").setup({
     },
   },
   tags = {
-    -- This forces fzf to allow multiple selections (--multi)
-    fzf_opts = { ["--multi"] = true },
+    fzf_opts = {
+      ["--multi"] = true,
+      ["--exact"] = true,
+    },
   },
   btags = {
-    -- This forces fzf to allow multiple selections (--multi)
-    fzf_opts = { ["--multi"] = true },
+    fzf_opts = {
+      ["--multi"] = true,
+      ["--exact"] = true,
+    },
   },
 })
 
@@ -66,32 +70,6 @@ keymap("n", "<leader>ff", fzflua.files, opts)
 keymap("n", "<leader>fi", fzflua.git_files, opts)
 keymap("n", "<leader>fG", fzflua.live_grep, opts)
 keymap("n", "<leader>fb", fzflua.buffers, opts)
-
--- Find treesitter symbols in the current buffer
-keymap("n", "<leader>bs", fzflua.treesitter, opts)
-
--- Find tags for the current word/WORD under the cursor in the current project
-keymap("n", "<leader>ft", function()
-  fzflua.tags({ query = vim.fn.expand("<cword>") })
-end, opts)
-keymap("n", "<leader>fT", function()
-  fzflua.tags({ query = vim.fn.expand("<cWORD>") })
-end, opts)
-
--- Find tags for the current word/WORD under the cursor in the current buffer
-keymap("n", "<leader>bt", function()
-  fzflua.btags({ query = vim.fn.expand("<cword>") })
-end, opts)
-keymap("n", "<leader>bT", function()
-  fzflua.btags({ query = vim.fn.expand("<cWORD>") })
-end, opts)
-
--- Grep tags for the current word/WORD under the cursor
-keymap("n", "<leader>wt", fzflua.tags_grep_cword, opts)
-keymap("n", "<leader>wT", fzflua.tags_grep_cWORD, opts)
-
--- Grep tags for the visually selected text
-keymap("v", "<leader>wt", fzflua.tags_grep_visual, opts)
 
 -- Find files in the current project, including hidden files and files ignored by version control
 keymap("n", "<leader>fh", function()
@@ -107,8 +85,35 @@ keymap("n", "<leader>fg", function()
   })
 end, opts)
 
--- Live grep with fixed string search for the visually selected text in visual mode
-keymap("n", "<leader>fw", function()
+-- Find treesitter symbols in the current buffer
+keymap("n", "<leader>bs", fzflua.treesitter, opts)
+
+-- Find tags for the current word under the cursor in the current project
+keymap("n", "gd", function()
+  fzflua.tags({ query = vim.fn.expand("<cword>") })
+end, opts)
+
+keymap("v", "gd", function()
+  local text = vim.getVisualSelection()
+  fzflua.tags({ query = text })
+end, opts)
+
+-- Find tags for the current word under the cursor in the current buffer
+keymap("n", "gD", function()
+  fzflua.btags({ query = vim.fn.expand("<cword>") })
+end, opts)
+
+keymap("v", "gD", function()
+  local text = vim.getVisualSelection()
+  fzflua.btags({ query = text })
+end, opts)
+
+-- Grep tags for the current word under the cursor
+keymap("n", "gw", fzflua.tags_grep_cword, opts)
+keymap("v", "gw", fzflua.tags_grep_visual, opts)
+
+-- Live grep for the current word under the cursor in the current project
+keymap("n", "gl", function()
   fzflua.live_grep({
     search = vim.fn.expand("<cword>"),
     no_esc = true,
@@ -116,15 +121,7 @@ keymap("n", "<leader>fw", function()
   })
 end, opts)
 
-keymap("v", "<leader>fW", function()
-  fzflua.live_grep({
-    search = vim.fn.expand("<cWORD>"),
-    no_esc = true,
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
-  })
-end, opts)
-
-keymap("v", "<leader>fw", function()
+keymap("v", "gl", function()
   local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,
@@ -133,7 +130,8 @@ keymap("v", "<leader>fw", function()
   })
 end, opts)
 
-keymap("n", "<leader>bw", function()
+-- Live grep for the current word under the cursor in the current file
+keymap("n", "gL", function()
   fzflua.live_grep({
     search = vim.fn.expand("<cword>"),
     search_paths = { vim.fn.expand("%:p") },
@@ -142,16 +140,7 @@ keymap("n", "<leader>bw", function()
   })
 end, opts)
 
-keymap("n", "<leader>bW", function()
-  fzflua.live_grep({
-    search = vim.fn.expand("<cWORD>"),
-    search_paths = { vim.fn.expand("%:p") },
-    no_esc = true,
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
-  })
-end, opts)
-
-keymap("v", "<leader>bw", function()
+keymap("v", "gL", function()
   local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,
