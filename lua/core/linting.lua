@@ -1,5 +1,7 @@
 local qf_group = vim.api.nvim_create_augroup("QFHighlight", { clear = true })
-local ns_id = vim.api.nvim_create_namespace("qf_buffer_highlights")
+
+local qf_ns_id = vim.api.nvim_create_namespace("qf_buffer_highlights")
+local ll_ns_id = vim.api.nvim_create_namespace("ll_buffer_highlights")
 
 -- HashMap to store our parsed quickfix items: qf_cache[bufnr][lnum] = { items... }
 local qf_cache = {}
@@ -60,9 +62,41 @@ local function update_qf_cache()
   end
 end
 
--- Apply highlights from the cache to the given buffer
-local function apply_highlights(bufnr)
-  vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+-- Get the location list items of the window that is displaying a specific buffer.
+local function get_buf_win_ll_items(bufnr)
+  local win_id = vim.fn.bufwinid(bufnr)
+  if win_id == -1 then
+    return nil -- Buffer is not displayed in any window
+  end
+
+  local items = {}
+  local loc_list_items = vim.fn.getloclist(win_id, { items = 0 })
+
+  for _, item in ipairs(loc_list_items.items) do
+    if item.valid == 1 then
+      local start_col = math.max(0, item.col - 1)
+      local end_col = start_col + 6
+      if item.end_col and item.end_col > 0 then
+        end_col = item.end_col - 1
+      end
+
+      table.insert(items, {
+        start_col = start_col,
+        end_col = end_col,
+        text = item.text:gsub("^%s*", ""),
+        lnum = item.lnum,
+        col = item.col,
+        type = item.type,
+      })
+    end
+  end
+
+  return items
+end
+
+-- Apply highlights from the qf cache to the given buffer
+local function apply_qf_highlights(bufnr)
+  vim.api.nvim_buf_clear_namespace(bufnr, qf_ns_id, 0, -1)
 
   if not qf_cache[bufnr] then
     return
@@ -73,13 +107,36 @@ local function apply_highlights(bufnr)
       if lnum > 0 then
         vim.api.nvim_buf_add_highlight(
           bufnr,
-          ns_id,
+          qf_ns_id,
           get_hl_group(item.type),
           lnum - 1,
           item.start_col,
           item.end_col
         )
       end
+    end
+  end
+end
+
+-- Apply highlights from the location list items to the given buffer
+local function apply_ll_highlights(bufnr)
+  vim.api.nvim_buf_clear_namespace(bufnr, ll_ns_id, 0, -1)
+
+  local ll_items = get_buf_win_ll_items(bufnr)
+  if not ll_items then
+    return
+  end
+
+  for _, item in ipairs(ll_items or {}) do
+    if item.lnum > 0 then
+      vim.api.nvim_buf_add_highlight(
+        bufnr,
+        ll_ns_id,
+        "DiagnosticHighlight",
+        item.lnum - 1,
+        item.start_col,
+        item.end_col
+      )
     end
   end
 end
@@ -210,7 +267,13 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
   group = qf_group,
   callback = function()
     update_qf_cache()
-    apply_highlights(vim.api.nvim_get_current_buf())
+    local bufnr = vim.api.nvim_get_current_buf()
+    -- If current buffer is a file buffer, apply highlights
+    local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
+    if buf_type == "" then
+      apply_qf_highlights(bufnr)
+      apply_ll_highlights(bufnr)
+    end
   end,
 })
 
