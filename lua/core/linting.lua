@@ -7,6 +7,9 @@ local ll_ns_id = vim.api.nvim_create_namespace("ll_buffer_highlights")
 local qf_cache = {}
 local last_qf_id = -1
 
+-- Track the currently running make job to allow cancellation
+local active_make_job = nil
+
 -- Function to determine the highlight group based on the quickfix type (severity)
 local function get_hl_group(qf_type)
   local t = string.upper(qf_type or "")
@@ -250,7 +253,7 @@ local function show_qf_popup()
   end
 end
 
-local function silent_make()
+local function trigger_make()
   vim.cmd("silent! make!")
 
   -- Get the quickfix list items count after the make command
@@ -268,18 +271,24 @@ local function silent_make()
   end
 end
 
--- Send buffer-local quickfix items to a location list
-local function buffer_qf_to_loclist()
-  local bufnr = vim.api.nvim_get_current_buf()
+local function collect_buf_qf_items(bufnr)
   local qf_list = vim.fn.getqflist()
   local loc_list = {}
 
-  -- Filter items that only belong to the current buffer
+  -- Filter items that only belong to the specified buffer
   for _, item in ipairs(qf_list) do
     if item.bufnr == bufnr then
       table.insert(loc_list, item)
     end
   end
+
+  return loc_list
+end
+
+-- Send buffer-local quickfix items to a location list
+local function buffer_qf_to_loclist()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local loc_list = collect_buf_qf_items(bufnr)
 
   -- Set the location list for the current window (0) and replace ('r') any existing list
   vim.fn.setloclist(0, loc_list, "r")
@@ -292,6 +301,115 @@ local function buffer_qf_to_loclist()
     -- }, false, {})
   else
     vim.notify("No quickfix items for the current buffer", vim.log.levels.WARN)
+  end
+end
+
+-- Asynchronously run the make command and populate quickfix/location lists
+local function async_auto_make()
+  -- Capture the current buffer number immediately to prevent race conditions.
+  -- If the user switches buffers during compilation, we still highlight the correct buffer.
+  local bufnr = vim.api.nvim_get_current_buf()
+  local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
+
+  -- Only run make for actual file buffers (not special buffers like quickfix, help, etc.)
+  if buf_type ~= "" then
+    return
+  end
+
+  -- Cancel any previously running make job to avoid redundant compilation.
+  -- This prevents overlapping jobs when files are saved rapidly.
+  if active_make_job then
+    vim.fn.jobstop(active_make_job)
+    active_make_job = nil
+  end
+
+  -- Expand makeprg to resolve placeholders like % (current file)
+  local makeprg = vim.fn.expandcmd(vim.o.makeprg)
+
+  -- Determine if we need shell wrapping for the command.
+  -- Shell wrapping is required when makeprg contains shell metacharacters like:
+  -- pipes (|), redirections (>, >>), command chaining (&&, ||, ;), etc.
+  local needs_shell = makeprg:match("[|><;&]")
+
+  -- Simple and robust: always use shell
+  local cmd = { vim.o.shell, vim.o.shellcmdflag, makeprg }
+
+  -- Accumulate all output lines from stdout and stderr
+  local output = {}
+
+  -- Start the asynchronous job
+  active_make_job = vim.fn.jobstart(cmd, {
+    -- Buffer stdout: wait for all output before calling on_stdout.
+    -- This is essential because we need the complete compiler output to parse
+    -- with errorformat and populate the quickfix list correctly.
+    stdout_buffered = true,
+
+    -- Buffer stderr: most compilers write errors to stderr, so capture it too.
+    stderr_buffered = true,
+
+    -- Collect stdout data (called once when job completes due to buffering)
+    on_stdout = function(_, data)
+      vim.list_extend(output, data)
+    end,
+
+    -- Collect stderr data (called once when job completes due to buffering)
+    on_stderr = function(_, data)
+      vim.list_extend(output, data)
+    end,
+
+    -- Process the results when the job completes
+    on_exit = function(_, exit_code)
+      -- vim.schedule() is REQUIRED: all Neovim API calls must happen on the main thread.
+      -- Job callbacks run on a separate thread, so we must schedule API work.
+      vim.schedule(function()
+        -- Clear the active job tracker since this job has completed
+        active_make_job = nil
+
+        -- Check if the original buffer is still valid.
+        -- The user might have closed the buffer during compilation.
+        if not vim.api.nvim_buf_is_valid(bufnr) then
+          return
+        end
+
+        -- Filter out empty strings that vim.fn.jobstart callbacks may include
+        output = vim.tbl_filter(function(line)
+          return line ~= ""
+        end, output)
+
+        -- Populate the quickfix list by parsing the output using errorformat.
+        -- The 'efm' option tells Vim how to parse compiler errors into structured items.
+        vim.fn.setqflist({}, " ", {
+          title = "make",
+          lines = output,
+          efm = vim.o.errorformat,
+        })
+
+        -- Update the quickfix cache to reflect the new items
+        update_qf_cache()
+
+        -- Check how many items were added to the quickfix list
+        local qf_info = vim.fn.getqflist({ size = 0 })
+        local count = qf_info.size or 0
+
+        if count > 0 then
+          -- Filter quickfix items to only those belonging to the current buffer
+          local loc_list = collect_buf_qf_items(bufnr)
+
+          -- Update the location list for this window with buffer-specific errors
+          vim.fn.setloclist(0, loc_list, "r")
+
+          -- Apply visual highlights to the buffer for both quickfix and location list items
+          apply_qf_highlights(bufnr)
+          apply_ll_highlights(bufnr)
+        end
+      end)
+    end,
+  })
+
+  -- If jobstart failed (returns -1 or 0), clear the tracker and notify the user
+  if active_make_job <= 0 then
+    active_make_job = nil
+    vim.notify("Failed to start make command: " .. makeprg, vim.log.levels.ERROR)
   end
 end
 
@@ -310,8 +428,33 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
   end,
 })
 
+make_on_save_augroup = vim.api.nvim_create_augroup("MakeOnSave", { clear = true })
+
+local debounce_timer = nil
+
+function make_on_save()
+  -- If a timer is already running, stop it
+  if debounce_timer then
+    debounce_timer:stop()
+    debounce_timer:close()
+    debounce_timer = nil
+  end
+  -- Start a new timer (300 milliseconds delay)
+  debounce_timer = vim.defer_fn(function()
+    debounce_timer = nil
+    async_auto_make()
+  end, 300)
+end
+
+-- To use make on save, put this code to .nvim.lua:
+-- vim.api.nvim_create_autocmd("BufWritePost", {
+--   group = make_on_save_augroup,
+--   pattern = "*" or { "*.c", "*.cpp", "*.rs" }, -- Add your desired file patterns here
+--   callback = make_on_save,
+-- })
+
 -- Press mk to run :make silently and update the quickfix list without opening it
-vim.keymap.set("n", "mk", silent_make, {
+vim.keymap.set("n", "mk", trigger_make, {
   desc = "Run make silently",
   noremap = true,
 })
