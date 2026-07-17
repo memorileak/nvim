@@ -25,6 +25,47 @@ local function get_hl_group(qf_type)
   return "DiagnosticUnderlineHighlight" -- Default fallback
 end
 
+-- Compute highlight range from a quickfix/location-list item.
+-- Returns 0-based, end-exclusive columns for nvim_buf_add_highlight.
+local function compute_item_range(bufnr, item)
+  -- Quickfix/location-list columns are 1-based; highlights use 0-based columns.
+  local start_col = math.max(0, (tonumber(item.col) or 1) - 1)
+
+  if item.end_col and item.end_col > 0 then
+    -- Prefer explicit ranges from the producer when available.
+    local explicit_end = item.end_col - 1
+    return start_col, math.max(start_col + 1, explicit_end)
+  end
+
+  -- No explicit end column: derive a fallback span from the source line.
+  local lnum = tonumber(item.lnum) or 1
+  local line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ""
+  local line_len = #line
+
+  if line_len == 0 then
+    -- Empty lines still need a non-zero width range to keep downstream logic safe.
+    return 0, 1
+  end
+
+  -- Clamp scan position to the line so out-of-range cols don't error.
+  local scan_col = math.min(start_col, line_len - 1)
+  local ch = line:sub(scan_col + 1, scan_col + 1)
+
+  -- Use Vim keyword semantics so fallback matches <cword> behavior.
+  if vim.fn.match(ch, [[\k]]) == 0 then
+    local match = vim.fn.matchstrpos(line, [[\k\+]], scan_col)
+    local mstart = tonumber(match[2]) or -1
+    local mend = tonumber(match[3]) or -1
+    if mstart == scan_col and mend > mstart then
+      -- matchstrpos returns byte indexes; mend is already end-exclusive.
+      return mstart, mend
+    end
+  end
+
+  -- If point is not on a keyword char, highlight exactly one character.
+  return scan_col, scan_col + 1
+end
+
 -- Core optimization: Only parse the Quickfix list if it has changed
 local function update_qf_cache()
   -- Fetch just the ID first to check if the list has changed (O(1) operation)
@@ -43,11 +84,7 @@ local function update_qf_cache()
       qf_cache[item.bufnr] = qf_cache[item.bufnr] or {}
       qf_cache[item.bufnr][item.lnum] = qf_cache[item.bufnr][item.lnum] or {}
 
-      local start_col = math.max(0, item.col - 1)
-      local end_col = start_col + 6
-      if item.end_col and item.end_col > 0 then
-        end_col = item.end_col - 1
-      end
+      local start_col, end_col = compute_item_range(item.bufnr, item)
 
       -- Insert into our O(1) lookup table
       table.insert(qf_cache[item.bufnr][item.lnum], {
@@ -74,11 +111,7 @@ local function get_buf_win_ll_items(bufnr)
 
   for _, item in ipairs(loc_list_items.items) do
     if item.valid == 1 then
-      local start_col = math.max(0, item.col - 1)
-      local end_col = start_col + 6
-      if item.end_col and item.end_col > 0 then
-        end_col = item.end_col - 1
-      end
+      local start_col, end_col = compute_item_range(bufnr, item)
 
       table.insert(items, {
         start_col = start_col,
