@@ -286,7 +286,7 @@ local function buffer_qf_to_loclist()
 
   -- Open the location list window if there are items
   if #loc_list > 0 then
-    vim.cmd("lopen")
+    vim.cmd("lopen | wincmd p") -- Open location list and return to previous window
     -- vim.api.nvim_echo({
     --   { string.format("Loaded %d items into location list", #loc_list), "Normal" },
     -- }, false, {})
