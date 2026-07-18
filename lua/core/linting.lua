@@ -416,10 +416,9 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
   end,
 })
 
+-- Related make_on_save configuration
 make_on_save_augroup = vim.api.nvim_create_augroup("MakeOnSave", { clear = true })
-
 local debounce_timer = nil
-
 function make_on_save()
   -- If a timer is already running, stop it
   if debounce_timer then
@@ -427,11 +426,11 @@ function make_on_save()
     debounce_timer:close()
     debounce_timer = nil
   end
-  -- Start a new timer (300 milliseconds delay)
+  -- Start a new timer (500 milliseconds delay)
   debounce_timer = vim.defer_fn(function()
     debounce_timer = nil
     async_make()
-  end, 300)
+  end, 500)
 end
 
 -- To use make on save, put this code to .nvim.lua:
@@ -488,6 +487,81 @@ local function buffer_qf_to_loclist()
   end
 end
 
+-- Circular navigation for quickfix and location list items
+function circular_cnext()
+  local qf_info = vim.fn.getqflist({ size = 0, idx = 0 })
+  local size = qf_info.size
+  local idx = qf_info.idx
+
+  if size == 0 then
+    vim.notify("No quickfix items", vim.log.levels.WARN)
+    return
+  end
+
+  if idx >= size then
+    -- Wrap to first item
+    vim.cmd("cfirst")
+  else
+    vim.cmd("cnext")
+  end
+end
+
+function circular_cprev()
+  local qf_info = vim.fn.getqflist({ size = 0, idx = 0 })
+  local size = qf_info.size
+  local idx = qf_info.idx
+
+  if size == 0 then
+    vim.notify("No quickfix items", vim.log.levels.WARN)
+    return
+  end
+
+  if idx <= 1 then
+    -- Wrap to last item
+    vim.cmd("clast")
+  else
+    vim.cmd("cprev")
+  end
+end
+
+function circular_lnext()
+  local win_id = vim.api.nvim_get_current_win()
+  local loc_info = vim.fn.getloclist(win_id, { size = 0, idx = 0 })
+  local size = loc_info.size
+  local idx = loc_info.idx
+
+  if size == 0 then
+    vim.notify("No location list items", vim.log.levels.WARN)
+    return
+  end
+
+  if idx >= size then
+    -- Wrap to first item
+    vim.cmd("lfirst")
+  else
+    vim.cmd("lnext")
+  end
+end
+
+function circular_lprev()
+  local win_id = vim.api.nvim_get_current_win()
+  local loc_info = vim.fn.getloclist(win_id, { size = 0, idx = 0 })
+  local size = loc_info.size
+  local idx = loc_info.idx
+
+  if size == 0 then
+    vim.notify("No location list items", vim.log.levels.WARN)
+    return
+  end
+
+  if idx <= 1 then
+    -- Wrap to last item
+    vim.cmd("llast")
+  else
+    vim.cmd("lprev")
+  end
+end
+
 -- Press mk to run :make silently and update the quickfix list without opening it
 vim.keymap.set("n", "mk", trigger_make, {
   desc = "Run make silently",
@@ -500,15 +574,28 @@ vim.keymap.set("n", "ml", buffer_qf_to_loclist, {
   noremap = true,
 })
 
--- Navigate through diagnostics in the location list using ]d and [d
-vim.keymap.set("n", "]d", "<cmd>lnext<CR>", {
-  desc = "Go to next diagnostic in location list",
+-- Replace existing quickfix keymaps
+vim.keymap.set("n", "]q", circular_cnext, {
+  desc = "Go to next quickfix item (circular)",
   noremap = true,
   silent = true,
 })
 
-vim.keymap.set("n", "[d", "<cmd>lprev<CR>", {
-  desc = "Go to previous diagnostic in location list",
+vim.keymap.set("n", "[q", circular_cprev, {
+  desc = "Go to previous quickfix item (circular)",
+  noremap = true,
+  silent = true,
+})
+
+-- Replace existing location list keymaps
+vim.keymap.set("n", "]d", circular_lnext, {
+  desc = "Go to next diagnostic in location list (circular)",
+  noremap = true,
+  silent = true,
+})
+
+vim.keymap.set("n", "[d", circular_lprev, {
+  desc = "Go to previous diagnostic in location list (circular)",
   noremap = true,
   silent = true,
 })
