@@ -8,7 +8,7 @@
   "conform.nvim": { "branch": "master", "commit": "619363c30309d29ffa631e67c8183f2a72caa373" },
   "copilot.vim": { "branch": "release", "commit": "a12fd5672110c8aa7e3c8419e28c96943ca179be" },
   "fzf-lua": { "branch": "main", "commit": "532d463f5c83595192fe740572d8fd6902b2217a" },
-  "gitsigns": { "branch": "main", "commit": "eb60cc7b94c46005237fd34170d76f3a089a90aa" },
+  "gitsigns": { "branch": "main", "commit": "31d6fb2d618bca1482b9f274751ead5f03461408" },
   "indent-blankline.nvim": { "branch": "master", "commit": "d28a3f70721c79e3c5f6693057ae929f3d9c0a03" },
   "kanagawa": { "branch": "master", "commit": "bb85e4bfc8d89b0e62c8fa53ccdd13d12e2f77b3" },
   "lazy.nvim": { "branch": "main", "commit": "306a05526ada86a7b30af95c5cc81ffba93fef97" },
@@ -17,6 +17,6 @@
   "nvim-spectre": { "branch": "master", "commit": "72f56f7585903cd7bf92c665351aa585e150af0f" },
   "nvim-tree.lua": { "branch": "master", "commit": "531b807b8f0d6f75016a0ee1e0cd5ce2086e9d95" },
   "nvim-treesitter": { "branch": "main", "commit": "4916d6592ede8c07973490d9322f187e07dfefac" },
-  "nvim-web-devicons": { "branch": "master", "commit": "09d1324e264c6950262dbe02a9bce2933a6800db" },
+  "nvim-web-devicons": { "branch": "master", "commit": "0ca28b61a04fe7426cefbdd52c2647ef0e335b5f" },
   "plenary.nvim": { "branch": "master", "commit": "74b06c6c75e4eeb3108ec01852001636d85a932b" }
 }
