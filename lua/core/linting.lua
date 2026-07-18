@@ -253,24 +253,7 @@ local function show_qf_popup()
   end
 end
 
-local function trigger_make()
-  vim.cmd("silent! make!")
-
-  -- Get the quickfix list items count after the make command
-  local qf_info = vim.fn.getqflist({ size = 0 })
-  local count = qf_info.size or 0
-
-  -- Send notification based on the count
-  if count > 0 then
-    vim.notify(
-      string.format("Make finished, %d items added to quickfix", count),
-      vim.log.levels.INFO
-    )
-  else
-    vim.notify("Make finished, no items added to quickfix", vim.log.levels.INFO)
-  end
-end
-
+-- Collect quickfix items that belong to a specific buffer and return them as a list
 local function collect_buf_qf_items(bufnr)
   local qf_list = vim.fn.getqflist()
   local loc_list = {}
@@ -285,27 +268,8 @@ local function collect_buf_qf_items(bufnr)
   return loc_list
 end
 
--- Send buffer-local quickfix items to a location list
-local function buffer_qf_to_loclist()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local loc_list = collect_buf_qf_items(bufnr)
-
-  -- Set the location list for the current window (0) and replace ('r') any existing list
-  vim.fn.setloclist(0, loc_list, "r")
-
-  -- Open the location list window if there are items
-  if #loc_list > 0 then
-    vim.cmd("lopen | wincmd p") -- Open location list and return to previous window
-    -- vim.api.nvim_echo({
-    --   { string.format("Loaded %d items into location list", #loc_list), "Normal" },
-    -- }, false, {})
-  else
-    vim.notify("No quickfix items for the current buffer", vim.log.levels.WARN)
-  end
-end
-
--- Asynchronously run the make command and populate quickfix/location lists
-local function async_auto_make()
+-- Asynchronously run the make process and populate quickfix list
+local function async_make(on_complete)
   -- Capture the current buffer number immediately to prevent race conditions.
   -- If the user switches buffers during compilation, we still highlight the correct buffer.
   local bufnr = vim.api.nvim_get_current_buf()
@@ -378,6 +342,7 @@ local function async_auto_make()
 
         -- Populate the quickfix list by parsing the output using errorformat.
         -- The 'efm' option tells Vim how to parse compiler errors into structured items.
+        -- Note that this does not fire the "QuickFixCmdPost" event, so we manually update the cache and highlights below.
         vim.fn.setqflist({}, " ", {
           title = "make",
           lines = output,
@@ -387,20 +352,12 @@ local function async_auto_make()
         -- Update the quickfix cache to reflect the new items
         update_qf_cache()
 
-        -- Check how many items were added to the quickfix list
-        local qf_info = vim.fn.getqflist({ size = 0 })
-        local count = qf_info.size or 0
+        -- Apply visual highlights to the buffer for quickfix items
+        apply_qf_highlights(bufnr)
 
-        if count > 0 then
-          -- Filter quickfix items to only those belonging to the current buffer
-          local loc_list = collect_buf_qf_items(bufnr)
-
-          -- Update the location list for this window with buffer-specific errors
-          vim.fn.setloclist(0, loc_list, "r")
-
-          -- Apply visual highlights to the buffer for both quickfix and location list items
-          apply_qf_highlights(bufnr)
-          apply_ll_highlights(bufnr)
+        -- Call on_complete callback if provided
+        if on_complete then
+          on_complete()
         end
       end)
     end,
@@ -413,17 +370,27 @@ local function async_auto_make()
   end
 end
 
--- Automatically update cache and highlight on buffer enter OR after a :make command
-vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
+-- Update quickfix highlights on buffer enter
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
+  group = qf_group,
+  callback = function()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
+    if buf_type == "" then
+      apply_qf_highlights(bufnr)
+    end
+  end,
+})
+
+-- Update quickfix cache and highlights after a :make command
+vim.api.nvim_create_autocmd("QuickFixCmdPost", {
   group = qf_group,
   callback = function()
     update_qf_cache()
     local bufnr = vim.api.nvim_get_current_buf()
-    -- If current buffer is a file buffer, apply highlights
     local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
     if buf_type == "" then
       apply_qf_highlights(bufnr)
-      apply_ll_highlights(bufnr)
     end
   end,
 })
@@ -442,7 +409,7 @@ function make_on_save()
   -- Start a new timer (300 milliseconds delay)
   debounce_timer = vim.defer_fn(function()
     debounce_timer = nil
-    async_auto_make()
+    async_make()
   end, 300)
 end
 
@@ -452,6 +419,46 @@ end
 --   pattern = "*" or { "*.c", "*.cpp", "*.rs" }, -- Add your desired file patterns here
 --   callback = make_on_save,
 -- })
+
+local function trigger_make()
+  async_make(function()
+    -- Get the quickfix list items count after the make command
+    local qf_info = vim.fn.getqflist({ size = 0 })
+    local count = qf_info.size or 0
+
+    -- Send notification based on the count
+    if count > 0 then
+      vim.notify(
+        string.format("Make finished, %d items added to quickfix", count),
+        vim.log.levels.INFO
+      )
+    else
+      vim.notify("Make finished, no items added to quickfix", vim.log.levels.INFO)
+    end
+  end)
+end
+
+-- Send buffer-local quickfix items to a location list
+local function buffer_qf_to_loclist()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local loc_list = collect_buf_qf_items(bufnr)
+
+  -- Set the location list for the current window (0) and replace ('r') any existing list
+  vim.fn.setloclist(0, loc_list, "r")
+
+  -- Apply highlights for the location list items in the current buffer
+  apply_ll_highlights(bufnr)
+
+  -- Open the location list window if there are items
+  if #loc_list > 0 then
+    vim.cmd("lopen | wincmd p") -- Open location list and return to previous window
+    -- vim.api.nvim_echo({
+    --   { string.format("Loaded %d items into location list", #loc_list), "Normal" },
+    -- }, false, {})
+  else
+    vim.notify("No quickfix items for the current buffer", vim.log.levels.WARN)
+  end
+end
 
 -- Press mk to run :make silently and update the quickfix list without opening it
 vim.keymap.set("n", "mk", trigger_make, {
