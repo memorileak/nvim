@@ -1,7 +1,5 @@
 local qf_group = vim.api.nvim_create_augroup("QFHighlight", { clear = true })
-
 local qf_ns_id = vim.api.nvim_create_namespace("qf_buffer_highlights")
-local ll_ns_id = vim.api.nvim_create_namespace("ll_buffer_highlights")
 
 -- HashMap to store our parsed quickfix items: qf_cache[bufnr][lnum] = { items... }
 local qf_cache = {}
@@ -102,15 +100,11 @@ local function update_qf_cache()
   end
 end
 
--- Get the location list items of the window that is displaying a specific buffer.
-local function get_buf_win_ll_items(bufnr)
-  local win_id = vim.fn.bufwinid(bufnr)
-  if win_id == -1 then
-    return nil -- Buffer is not displayed in any window
-  end
-
-  local items = {}
+-- Get the location list items of a specific window
+local function get_win_ll_items(win_id)
+  local bufnr = vim.api.nvim_win_get_buf(win_id)
   local loc_list_items = vim.fn.getloclist(win_id, { items = 0 })
+  local items = {}
 
   for _, item in ipairs(loc_list_items.items) do
     if item.valid == 1 then
@@ -155,10 +149,38 @@ local function apply_qf_highlights(bufnr)
 end
 
 -- Apply highlights from the location list items to the given buffer
-local function apply_ll_highlights(bufnr)
+local win_ll_ns_id = {}
+local win_ll_bufnr = {}
+local function apply_ll_highlights(win_id, bufnr)
+  local ll_ns_id = win_ll_ns_id[win_id]
+  if not ll_ns_id then
+    local win_id_str = tostring(win_id)
+    ll_ns_id = vim.api.nvim_create_namespace("ll_buffer_highlights_" .. win_id_str)
+    win_ll_ns_id[win_id] = ll_ns_id
+
+    vim.api.nvim_create_autocmd({ "WinClosed" }, {
+      pattern = win_id_str,
+      once = true,
+      callback = function()
+        -- Clear namespace from the buffer if it still exists
+        local buf = win_ll_bufnr[win_id]
+        if buf and vim.api.nvim_buf_is_valid(buf) then
+          vim.api.nvim_buf_clear_namespace(buf, ll_ns_id, 0, -1)
+        end
+
+        -- Remove tracking references
+        win_ll_ns_id[win_id] = nil
+        win_ll_bufnr[win_id] = nil
+      end,
+    })
+  end
+
+  -- Track the buffer for cleanup
+  win_ll_bufnr[win_id] = bufnr
+
   vim.api.nvim_buf_clear_namespace(bufnr, ll_ns_id, 0, -1)
 
-  local ll_items = get_buf_win_ll_items(bufnr)
+  local ll_items = get_win_ll_items(win_id)
   if not ll_items then
     return
   end
@@ -371,6 +393,7 @@ local function async_make(on_complete)
 end
 
 -- Update quickfix cache and highlights on buffer enter or after a :make command
+local win_last_loc_id = {}
 vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
   group = qf_group,
   callback = function()
@@ -378,7 +401,17 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
     local bufnr = vim.api.nvim_get_current_buf()
     local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
     if buf_type == "" then
+      -- Always reapply quickfix highlights
       apply_qf_highlights(bufnr)
+      -- Detect if the location list has changed for this window
+      -- If it has, reapply highlights for the location list items
+      local win_id = vim.api.nvim_get_current_win()
+      local last_id = win_last_loc_id[win_id] or -1
+      local loc_id = vim.fn.getloclist(win_id, { id = 0 }).id
+      if loc_id ~= last_id then
+        apply_ll_highlights(win_id, bufnr)
+        win_last_loc_id[win_id] = loc_id
+      end
     end
   end,
 })
@@ -428,14 +461,21 @@ end
 
 -- Send buffer-local quickfix items to a location list
 local function buffer_qf_to_loclist()
+  local win_id = vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_get_current_buf()
   local loc_list = collect_buf_qf_items(bufnr)
 
-  -- Set the location list for the current window (0) and replace ('r') any existing list
-  vim.fn.setloclist(0, loc_list, "r")
+  -- Set the location list for the current window and replace ('r') any existing list
+  vim.fn.setloclist(win_id, loc_list, "r")
+
+  -- Update the last known location list ID for this window
+  -- To prevent unnecessary re-highlighting
+  -- when the above { "BufEnter", "BufWinEnter", "QuickFixCmdPost" } autocmd fires
+  local loc_id = vim.fn.getloclist(win_id, { id = 0 }).id
+  win_last_loc_id[win_id] = loc_id
 
   -- Apply highlights for the location list items in the current buffer
-  apply_ll_highlights(bufnr)
+  apply_ll_highlights(win_id, bufnr)
 
   -- Open the location list window if there are items
   if #loc_list > 0 then
