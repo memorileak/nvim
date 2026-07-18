@@ -370,20 +370,8 @@ local function async_make(on_complete)
   end
 end
 
--- Update quickfix highlights on buffer enter
-vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
-  group = qf_group,
-  callback = function()
-    local bufnr = vim.api.nvim_get_current_buf()
-    local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
-    if buf_type == "" then
-      apply_qf_highlights(bufnr)
-    end
-  end,
-})
-
--- Update quickfix cache and highlights after a :make command
-vim.api.nvim_create_autocmd("QuickFixCmdPost", {
+-- Update quickfix cache and highlights on buffer enter or after a :make command
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
   group = qf_group,
   callback = function()
     update_qf_cache()
