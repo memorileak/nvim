@@ -1,13 +1,6 @@
 local qf_group = vim.api.nvim_create_augroup("QFHighlight", { clear = true })
 local qf_ns_id = vim.api.nvim_create_namespace("qf_buffer_highlights")
 
--- HashMap to store our parsed quickfix items: qf_cache[bufnr][lnum] = { items... }
-local qf_cache = {}
-local last_qf_id = -1
-
--- Track the currently running make job to allow cancellation
-local active_make_job = nil
-
 -- Function to determine the highlight group based on the quickfix type (severity)
 local function get_hl_group(qf_type)
   local t = string.upper(qf_type or "")
@@ -68,6 +61,9 @@ local function compute_item_range(bufnr, item)
 end
 
 -- Core optimization: Only parse the Quickfix list if it has changed
+-- HashMap to store our parsed quickfix items: qf_cache[bufnr][lnum] = { items... }
+local qf_cache = {}
+local last_qf_id = -1
 local function update_qf_cache()
   -- Fetch just the ID first to check if the list has changed (O(1) operation)
   local qf_info = vim.fn.getqflist({ id = 0, items = 0 })
@@ -80,70 +76,62 @@ local function update_qf_cache()
   qf_cache = {}
 
   for _, item in ipairs(qf_info.items) do
-    if item.valid == 1 and item.bufnr ~= 0 then
+    if item.valid == 1 then
       -- Initialize nested tables if they don't exist
       qf_cache[item.bufnr] = qf_cache[item.bufnr] or {}
       qf_cache[item.bufnr][item.lnum] = qf_cache[item.bufnr][item.lnum] or {}
-
-      local start_col, end_col = compute_item_range(item.bufnr, item)
-
-      -- Insert into our O(1) lookup table
-      table.insert(qf_cache[item.bufnr][item.lnum], {
-        start_col = start_col,
-        end_col = end_col,
-        text = item.text:gsub("^%s*", ""),
-        lnum = item.lnum,
-        col = item.col,
-        type = item.type,
-      })
+      -- Store the entire item for O(1) lookup later
+      table.insert(qf_cache[item.bufnr][item.lnum], item)
     end
   end
 end
 
--- Get the location list items of a specific window
-local function get_win_ll_items(win_id)
-  local bufnr = vim.api.nvim_win_get_buf(win_id)
-  local loc_list_items = vim.fn.getloclist(win_id, { items = 0 })
-  local items = {}
+-- Collect quickfix items that belong to a specific buffer and return them as a list
+local function collect_buf_qf_items(bufnr, sort)
+  update_qf_cache() -- Ensure the cache is up-to-date
+  local buf_qf_items = {}
 
-  for _, item in ipairs(loc_list_items.items) do
-    if item.valid == 1 then
-      local start_col, end_col = compute_item_range(bufnr, item)
-
-      table.insert(items, {
-        start_col = start_col,
-        end_col = end_col,
-        text = item.text:gsub("^%s*", ""),
-        lnum = item.lnum,
-        col = item.col,
-        type = item.type,
-      })
+  for _, items in pairs(qf_cache[bufnr] or {}) do
+    for _, item in ipairs(items) do
+      table.insert(buf_qf_items, item)
     end
   end
 
-  return items
+  if sort then
+    table.sort(buf_qf_items, function(a, b)
+      if a.lnum == b.lnum then
+        return (a.col or 0) < (b.col or 0)
+      end
+      return (a.lnum or 0) < (b.lnum or 0)
+    end)
+  end
+
+  return buf_qf_items
+end
+
+-- Get the location list items of a specific window
+local function get_win_ll_items(win_id)
+  local loc_list_items = vim.fn.getloclist(win_id, { items = 0 })
+  return loc_list_items.items or {}
 end
 
 -- Apply highlights from the qf cache to the given buffer
 local function apply_qf_highlights(bufnr)
   vim.api.nvim_buf_clear_namespace(bufnr, qf_ns_id, 0, -1)
 
-  if not qf_cache[bufnr] then
-    return
-  end
+  local items = collect_buf_qf_items(bufnr)
 
-  for lnum, items in pairs(qf_cache[bufnr]) do
-    for _, item in ipairs(items) do
-      if lnum > 0 then
-        vim.api.nvim_buf_add_highlight(
-          bufnr,
-          qf_ns_id,
-          get_hl_group(item.type),
-          lnum - 1,
-          item.start_col,
-          item.end_col
-        )
-      end
+  for _, item in ipairs(items) do
+    if item.lnum > 0 then
+      local start_col, end_col = compute_item_range(bufnr, item)
+      vim.api.nvim_buf_add_highlight(
+        bufnr,
+        qf_ns_id,
+        get_hl_group(item.type),
+        item.lnum - 1,
+        start_col,
+        end_col
+      )
     end
   end
 end
@@ -187,13 +175,14 @@ local function apply_ll_highlights(win_id, bufnr)
 
   for _, item in ipairs(ll_items or {}) do
     if item.lnum > 0 then
+      local start_col, end_col = compute_item_range(bufnr, item)
       vim.api.nvim_buf_add_highlight(
         bufnr,
         ll_ns_id,
         "DiagnosticHighlight",
         item.lnum - 1,
-        item.start_col,
-        item.end_col
+        start_col,
+        end_col
       )
     end
   end
@@ -201,9 +190,10 @@ end
 
 -- Show the quickfix message in a pop-up (O(1) lookup)
 local function show_qf_popup()
+  local bufnr = vim.api.nvim_get_current_buf()
+
   update_qf_cache() -- Ensure cache is fresh
 
-  local bufnr = vim.api.nvim_get_current_buf()
   if not qf_cache[bufnr] then
     return
   end -- No errors in this buffer
@@ -220,8 +210,12 @@ local function show_qf_popup()
 
   local messages = {}
   for _, item in ipairs(items_on_line) do
-    if cursor_col >= item.start_col and cursor_col < item.end_col then
-      table.insert(messages, string.format("[%d:%d] %s", item.lnum, item.col, item.text))
+    local start_col, end_col = compute_item_range(bufnr, item)
+    if cursor_col >= start_col and cursor_col < end_col then
+      table.insert(
+        messages,
+        string.format("[%d:%d] %s", item.lnum, item.col, item.text:gsub("^%s*", ""))
+      )
     end
   end
 
@@ -275,21 +269,8 @@ local function show_qf_popup()
   end
 end
 
--- Collect quickfix items that belong to a specific buffer and return them as a list
-local function collect_buf_qf_items(bufnr)
-  local qf_list = vim.fn.getqflist()
-  local loc_list = {}
-
-  -- Filter items that only belong to the specified buffer
-  for _, item in ipairs(qf_list) do
-    if item.bufnr == bufnr then
-      table.insert(loc_list, item)
-    end
-  end
-
-  return loc_list
-end
-
+-- Track the currently running make job to allow cancellation
+local active_make_job = nil
 -- Asynchronously run the make process and populate quickfix list
 local function async_make(on_complete)
   -- Capture the current buffer number immediately to prevent race conditions.
@@ -397,7 +378,7 @@ local win_last_loc_id = {}
 vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter", "QuickFixCmdPost" }, {
   group = qf_group,
   callback = function()
-    update_qf_cache()
+    update_qf_cache() -- Ensure the quickfix cache is up-to-date
     local bufnr = vim.api.nvim_get_current_buf()
     local buf_type = vim.api.nvim_buf_get_option(bufnr, "buftype")
     if buf_type == "" then
@@ -462,7 +443,9 @@ end
 local function buffer_qf_to_loclist()
   local win_id = vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_get_current_buf()
-  local loc_list = collect_buf_qf_items(bufnr)
+
+  -- Collect and sort items for the current buffer
+  local loc_list = collect_buf_qf_items(bufnr, true)
 
   -- Set the location list for the current window and replace ('r') any existing list
   vim.fn.setloclist(win_id, loc_list, "r")
