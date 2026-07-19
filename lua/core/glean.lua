@@ -231,6 +231,46 @@ local function clear_glean_file()
   vim.notify("Cleared glean file: " .. out_file, vim.log.levels.INFO)
 end
 
+-- Visually select the Tree-sitter node under the cursor
+local function select_treesitter_node()
+  -- 1. Use the modern API
+  local node = vim.treesitter.get_node()
+  if not node then
+    vim.notify("No Tree-sitter node found", vim.log.levels.WARN)
+    return
+  end
+
+  -- 2. Get the range of the node (Returns 0-indexed values)
+  local start_row, start_col, end_row, end_col = node:range()
+
+  -- 3. Adjust end position (Tree-sitter's end_col is exclusive)
+  if end_col == 0 then
+    -- If the node ends exactly at the start of a new line,
+    -- the actual last character is at the end of the previous line.
+    end_row = end_row - 1
+    local prev_line = vim.api.nvim_buf_get_lines(0, end_row, end_row + 1, false)[1]
+    end_col = prev_line and #prev_line or 0
+  else
+    -- Otherwise, just step one character back to make it inclusive for visual mode
+    end_col = end_col - 1
+  end
+
+  -- 4. Handle modes properly
+  -- We ONLY send <Esc> to clear the selection if we are already in visual mode ('x' map).
+  -- If we are in operator-pending mode ('o' map, like typing 'dan'), sending <Esc>
+  -- would abort the operator!
+  local mode = vim.api.nvim_get_mode().mode
+  if mode:match("^[vV\22]") then
+    vim.cmd("normal! \27") -- \27 is the keycode for <Esc>
+  end
+
+  -- 5. Execute the selection
+  -- nvim_win_set_cursor expects { 1-indexed row, 0-indexed column }
+  vim.api.nvim_win_set_cursor(0, { start_row + 1, start_col })
+  vim.cmd("normal! v")
+  vim.api.nvim_win_set_cursor(0, { end_row + 1, end_col })
+end
+
 -- Command and keymap setup
 local help_message = [[Glean: use 'open' to open the glean file or 'clear' to empty it]]
 
@@ -295,3 +335,11 @@ vim.keymap.set("n", "<leader>glO", "<cmd>split | Glean open<CR>", {
   noremap = true,
   silent = true,
 })
+
+-- Create the text object mapping for Visual ('x') and Operator-Pending ('o') modes.
+vim.keymap.set(
+  { "x", "o" },
+  "an",
+  select_treesitter_node,
+  { desc = "Select around treesitter node" }
+)
