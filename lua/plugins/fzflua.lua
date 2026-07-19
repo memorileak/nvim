@@ -84,7 +84,8 @@ end, opts)
 -- Live grep with fixed string search (no regex interpretation)
 keymap("n", "<leader>fg", function()
   fzflua.live_grep({
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+    -- Use -U: multiline, -F: fixed string
+    rg_opts = "-U -F " .. defaults.grep.rg_opts,
   })
 end, opts)
 
@@ -120,7 +121,8 @@ keymap("n", "gs", function()
   fzflua.live_grep({
     search = vim.fn.expand("<cword>"),
     no_esc = true,
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+    -- Use -U: multiline, -F: fixed string
+    rg_opts = "-U -F " .. defaults.grep.rg_opts,
   })
 end, opts)
 
@@ -129,7 +131,8 @@ keymap("x", "gs", function()
   fzflua.live_grep({
     search = text,
     no_esc = true,
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+    -- Use -U: multiline, -F: fixed string
+    rg_opts = "-U -F " .. defaults.grep.rg_opts,
   })
 end, opts)
 
@@ -139,7 +142,8 @@ keymap("n", "gS", function()
     search = vim.fn.expand("<cword>"),
     search_paths = { vim.fn.expand("%:p") },
     no_esc = true,
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+    -- Use -U: multiline, -F: fixed string
+    rg_opts = "-U -F " .. defaults.grep.rg_opts,
   })
 end, opts)
 
@@ -149,6 +153,7 @@ keymap("x", "gS", function()
     search = text,
     search_paths = { vim.fn.expand("%:p") },
     no_esc = true,
-    rg_opts = "-F " .. defaults.grep.rg_opts, -- Use -F for fixed string search
+    -- Use -U: multiline, -F: fixed string
+    rg_opts = "-U -F " .. defaults.grep.rg_opts,
   })
 end, opts)
