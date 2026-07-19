@@ -128,6 +128,15 @@ local function glean_selection()
   vim.notify("Collected visual selection.", vim.log.levels.INFO)
 end
 
+-- Trigger esc to exit visual mode and then glean the selection
+local function exit_visual_mode_and_glean_selection()
+  -- Force Neovim to exit visual mode synchronously to update the '< and '> marks
+  local esc = vim.api.nvim_replace_termcodes("<esc>", true, false, true)
+  vim.api.nvim_feedkeys(esc, "x", false)
+  -- Now glean the selection after exiting visual mode
+  glean_selection()
+end
+
 -- Open the glean file
 local function open_glean_file()
   local out_file = get_glean_file_path()
@@ -190,13 +199,7 @@ vim.keymap.set("n", "gl", glean_node, {
   silent = true,
 })
 
-vim.keymap.set("v", "gl", function()
-  -- Force Neovim to exit visual mode synchronously to update the '< and '> marks
-  local esc = vim.api.nvim_replace_termcodes("<esc>", true, false, true)
-  vim.api.nvim_feedkeys(esc, "x", false)
-  -- Now glean the selection after exiting visual mode
-  glean_selection()
-end, {
+vim.keymap.set("v", "gl", exit_visual_mode_and_glean_selection, {
   desc = "Collect selected text to the glean file",
   noremap = true,
   silent = true,
