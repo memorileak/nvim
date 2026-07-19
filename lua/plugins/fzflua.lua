@@ -1,7 +1,10 @@
+local core_functions = require("core/functions")
 local fzflua = require("fzf-lua")
+
+local get_visual_selection = core_functions.get_visual_selection
 local actions = fzflua.actions
 
-require("fzf-lua").setup({
+fzflua.setup({
   "hide",
   keymap = {
     fzf = {
@@ -94,7 +97,7 @@ keymap("n", "gd", function()
 end, opts)
 
 keymap("x", "gd", function()
-  local text = vim.getVisualSelection()
+  local text = get_visual_selection()
   fzflua.tags({ query = text })
 end, opts)
 
@@ -104,7 +107,7 @@ keymap("n", "gD", function()
 end, opts)
 
 keymap("x", "gD", function()
-  local text = vim.getVisualSelection()
+  local text = get_visual_selection()
   fzflua.btags({ query = text })
 end, opts)
 
@@ -122,7 +125,7 @@ keymap("n", "gs", function()
 end, opts)
 
 keymap("x", "gs", function()
-  local text = vim.getVisualSelection()
+  local text = get_visual_selection()
   fzflua.live_grep({
     search = text,
     no_esc = true,
@@ -141,7 +144,7 @@ keymap("n", "gS", function()
 end, opts)
 
 keymap("x", "gS", function()
-  local text = vim.getVisualSelection()
+  local text = get_visual_selection()
   fzflua.live_grep({
     search = text,
     search_paths = { vim.fn.expand("%:p") },
