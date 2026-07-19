@@ -93,7 +93,7 @@ keymap("n", "gd", function()
   fzflua.tags({ query = vim.fn.expand("<cword>") })
 end, opts)
 
-keymap("v", "gd", function()
+keymap("x", "gd", function()
   local text = vim.getVisualSelection()
   fzflua.tags({ query = text })
 end, opts)
@@ -103,14 +103,14 @@ keymap("n", "gD", function()
   fzflua.btags({ query = vim.fn.expand("<cword>") })
 end, opts)
 
-keymap("v", "gD", function()
+keymap("x", "gD", function()
   local text = vim.getVisualSelection()
   fzflua.btags({ query = text })
 end, opts)
 
 -- Grep tags for the current word under the cursor
 keymap("n", "gw", fzflua.tags_grep_cword, opts)
-keymap("v", "gw", fzflua.tags_grep_visual, opts)
+keymap("x", "gw", fzflua.tags_grep_visual, opts)
 
 -- Live grep for the current word under the cursor in the current project
 keymap("n", "gs", function()
@@ -121,7 +121,7 @@ keymap("n", "gs", function()
   })
 end, opts)
 
-keymap("v", "gs", function()
+keymap("x", "gs", function()
   local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,
@@ -140,7 +140,7 @@ keymap("n", "gS", function()
   })
 end, opts)
 
-keymap("v", "gS", function()
+keymap("x", "gS", function()
   local text = vim.getVisualSelection()
   fzflua.live_grep({
     search = text,

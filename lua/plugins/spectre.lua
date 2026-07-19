@@ -27,7 +27,7 @@ vim.keymap.set(
   }
 )
 
-vim.keymap.set("v", "<leader>sw", '<esc><cmd>lua require("spectre").open_visual()<CR>', {
+vim.keymap.set("x", "<leader>sw", '<esc><cmd>lua require("spectre").open_visual()<CR>', {
   noremap = true,
   silent = true,
   desc = "Search current word",

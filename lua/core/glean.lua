@@ -312,7 +312,7 @@ vim.keymap.set("n", "gl", glean_node, {
   silent = true,
 })
 
-vim.keymap.set("v", "gl", exit_visual_mode_and_glean_selection, {
+vim.keymap.set("x", "gl", exit_visual_mode_and_glean_selection, {
   desc = "Collect selected text to the glean file",
   noremap = true,
   silent = true,
