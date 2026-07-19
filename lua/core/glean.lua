@@ -1,19 +1,89 @@
 -- Only collect certain types of nodes
-local GLEANABLE_NODE_TYPES = {
-  -- Rust
-  struct_item = true,
-  enum_item = true,
-  impl_item = true,
-  function_item = true,
+local GLEANABLE_NODE_TYPES = {}
 
-  -- JavaScript
-  -- TypeScript
-  -- Python
+-- Rust
+GLEANABLE_NODE_TYPES.rust = {
+  const_item = true,
+  static_item = true,
+  type_item = true,
+  mod_item = true,
+  macro_definition = true,
+  function_item = true,
+  struct_item = true,
+  field_declaration = true,
+  enum_item = true,
+  enum_variant = true,
+  trait_item = true,
+  associated_type = true,
+  function_signature_item = true,
+  impl_item = true,
+}
+
+-- JavaScript
+GLEANABLE_NODE_TYPES.javascript = {
+  lexical_declaration = true,
+  variable_declaration = true,
   function_declaration = true,
-  function_definition = true,
-  method_declaration = true,
+  function_expression = true,
+  arrow_function = true,
+  generator_function_declaration = true,
+  generator_function = true,
+  ["class"] = true,
   class_declaration = true,
+  field_definition = true,
+  method_definition = true,
+}
+
+-- JavaScript React (JSX)
+GLEANABLE_NODE_TYPES.javascriptreact = vim.tbl_extend("force", GLEANABLE_NODE_TYPES.javascript, {
+  jsx_element = true,
+})
+
+-- TypeScript
+GLEANABLE_NODE_TYPES.typescript = vim.tbl_extend("force", GLEANABLE_NODE_TYPES.javascript, {
+  public_field_definition = true,
+  abstract_class_declaration = true,
+  abstract_method_signature = true,
+  interface_declaration = true,
+  property_signature = true,
+  method_signature = true,
+  type_alias_declaration = true,
+  enum_declaration = true,
+  module = true,
+  internal_module = true,
+  ambient_declaration = true,
+})
+
+-- TypeScript React (TSX)
+GLEANABLE_NODE_TYPES.typescriptreact = vim.tbl_extend("force", GLEANABLE_NODE_TYPES.typescript, {
+  jsx_element = true,
+})
+
+-- Python
+GLEANABLE_NODE_TYPES.python = {
+  expression_statement = true,
+  type_alias_statement = true,
+  function_definition = true,
+  decorated_definition = true,
   class_definition = true,
+  assignment = true,
+}
+
+-- Angular html
+GLEANABLE_NODE_TYPES.htmlangular = {
+  element = true,
+  let_statement = true,
+  switch_statement = true,
+  case_statement = true,
+  default_statement = true,
+  if_statement = true,
+  else_if_statement = true,
+  else_statement = true,
+  for_statement = true,
+  empty_statement = true,
+  defer_statement = true,
+  placeholder_statement = true,
+  error_statement = true,
 }
 
 -- Determine the path for the glean file based on the OS
@@ -50,9 +120,12 @@ local function glean_node()
     return nil
   end
 
+  -- Get filetype of the current buffer
+  local ft = vim.bo[bufnr].filetype
+
   local target_node = node
   while target_node do
-    if GLEANABLE_NODE_TYPES[target_node:type()] then
+    if (GLEANABLE_NODE_TYPES[ft] or {})[target_node:type()] then
       break
     end
     target_node = target_node:parent()
@@ -64,9 +137,6 @@ local function glean_node()
 
   -- Get absolute file path
   local file_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
-
-  -- Get filetype for markdown syntax highlighting
-  local ft = vim.bo[bufnr].filetype
 
   -- Get node range. Note: TS ranges are 0-indexed.
   -- We add 1 to make them 1-indexed (standard editor line/col numbers).
@@ -86,7 +156,10 @@ local function glean_node()
   -- Append to the glean file
   append_to_glean_file(payload)
 
-  vim.notify("Collected node: " .. target_node:type(), vim.log.levels.INFO)
+  vim.notify(
+    "Collected node: " .. target_node:type() .. " (" .. range_str .. ")",
+    vim.log.levels.INFO
+  )
 end
 
 -- Glean the current visual selection
@@ -125,7 +198,7 @@ local function glean_selection()
   -- Append to the glean file
   append_to_glean_file(payload)
 
-  vim.notify("Collected visual selection.", vim.log.levels.INFO)
+  vim.notify("Collected visual selection (" .. range_str .. ")", vim.log.levels.INFO)
 end
 
 -- Trigger esc to exit visual mode and then glean the selection
