@@ -3,6 +3,7 @@ require("core.options")
 require("core.keymaps")
 require("core.ctags")
 require("core.linting")
+require("core.glean")
 
 require("plugins.lazynvim")
 require("plugins.treesitter")
