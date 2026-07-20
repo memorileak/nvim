@@ -3,14 +3,12 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-EXT_FILE="./.tags.ext"
 FD_ARGS=("-t" "f")
 
-# Check if the extensions file exists and is not empty
-if [ -s "$EXT_FILE" ]; then
-  mapfile -t EXT_ARGS < <(sed 's/^/-e /' $EXT_FILE)
-  FD_ARGS+=(${EXT_ARGS[@]})
-fi
+# Process command-line arguments as file extensions
+for ext in "$@"; do
+  FD_ARGS+=("-e" "$ext")
+done
 
 echo "Scanning with: fd ${FD_ARGS[@]}"
 
