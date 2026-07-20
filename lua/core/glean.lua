@@ -110,27 +110,33 @@ local function append_to_glean_file(payload)
   f:close()
 end
 
+-- Find the nearest gleanable parent node based on the filetype
+local function get_nearest_gleanable_parent(filetype, node)
+  local target_node = node
+  while target_node do
+    if GLEANABLE_NODE_TYPES[filetype] and GLEANABLE_NODE_TYPES[filetype][target_node:type()] then
+      return target_node
+    end
+    target_node = target_node:parent()
+  end
+  return nil
+end
+
 -- Glean the current treesitter node
 local function glean_node()
   local bufnr = vim.api.nvim_get_current_buf()
   local node = vim.treesitter.get_node({ bufnr = bufnr })
 
   if not node then
-    vim.notify("No treesitter node found at cursor.", vim.log.levels.WARN)
+    vim.notify("No treesitter node found at cursor", vim.log.levels.WARN)
     return nil
   end
 
   -- Get filetype of the current buffer
   local ft = vim.bo[bufnr].filetype
 
-  local target_node = node
-  while target_node do
-    if (GLEANABLE_NODE_TYPES[ft] or {})[target_node:type()] then
-      break
-    end
-    target_node = target_node:parent()
-  end
-  target_node = target_node or node
+  -- Find the nearest gleanable parent node, or use the current node if none found
+  local target_node = get_nearest_gleanable_parent(ft, node) or node
 
   -- Extract necessary data
   local text = vim.treesitter.get_node_text(target_node, bufnr)
@@ -231,19 +237,21 @@ local function clear_glean_file()
   vim.notify("Cleared glean file: " .. out_file, vim.log.levels.INFO)
 end
 
--- Visually select the Tree-sitter node under the cursor
-local function select_treesitter_node()
-  -- 1. Use the modern API
-  local node = vim.treesitter.get_node()
+-- Visually select the nearest gleanable node under the cursor
+local function select_nearest_gleanable_node()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local node = vim.treesitter.get_node({ bufnr = bufnr })
+
   if not node then
-    vim.notify("No Tree-sitter node found", vim.log.levels.WARN)
+    vim.notify("No treesitter node found at cursor", vim.log.levels.WARN)
     return
   end
 
-  -- 2. Get the range of the node (Returns 0-indexed values)
-  local start_row, start_col, end_row, end_col = node:range()
+  local ft = vim.bo[bufnr].filetype
+  local target_node = get_nearest_gleanable_parent(ft, node) or node
+  local start_row, start_col, end_row, end_col = target_node:range()
 
-  -- 3. Adjust end position (Tree-sitter's end_col is exclusive)
+  -- Adjust end position (Tree-sitter's end_col is exclusive)
   if end_col == 0 then
     -- If the node ends exactly at the start of a new line,
     -- the actual last character is at the end of the previous line.
@@ -255,7 +263,7 @@ local function select_treesitter_node()
     end_col = end_col - 1
   end
 
-  -- 4. Handle modes properly
+  -- Handle modes properly
   -- We ONLY send <Esc> to clear the selection if we are already in visual mode ('x' map).
   -- If we are in operator-pending mode ('o' map, like typing 'dan'), sending <Esc>
   -- would abort the operator!
@@ -264,19 +272,106 @@ local function select_treesitter_node()
     vim.cmd("normal! \27") -- \27 is the keycode for <Esc>
   end
 
-  -- 5. Execute the selection
+  -- Execute the selection
   -- nvim_win_set_cursor expects { 1-indexed row, 0-indexed column }
   vim.api.nvim_win_set_cursor(0, { start_row + 1, start_col })
   vim.cmd("normal! v")
   vim.api.nvim_win_set_cursor(0, { end_row + 1, end_col })
 end
 
+-- Glean inspection mode: highlights the nearest gleanable node under the cursor
+local inspect_enabled = false
+local debounce_timer = nil
+local glean_inspection_nsid = vim.api.nvim_create_namespace("glean_inspect_highlight")
+local glean_inspection_augroup = vim.api.nvim_create_augroup("GleanInspection", { clear = true })
+
+local function clear_inspection_highlight(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+  vim.api.nvim_buf_clear_namespace(bufnr, glean_inspection_nsid, 0, -1)
+end
+
+local function apply_inspection_highlight(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  -- Clear any existing highlights first
+  clear_inspection_highlight(bufnr)
+
+  local node = vim.treesitter.get_node({ bufnr = bufnr })
+  if not node then
+    return
+  end
+
+  local filetype = vim.bo[bufnr].filetype
+  local target_node = get_nearest_gleanable_parent(filetype, node) or node
+  local start_row, start_col, end_row, end_col = target_node:range()
+
+  vim.hl.range(bufnr, glean_inspection_nsid, "QuickFixLine", {
+    start_row,
+    start_col,
+  }, {
+    end_row,
+    end_col,
+  })
+end
+
+local function toggle_glean_inspection()
+  inspect_enabled = not inspect_enabled
+  local bufnr = vim.api.nvim_get_current_buf()
+  if inspect_enabled then
+    apply_inspection_highlight(bufnr)
+    vim.notify("Glean inspection enabled", vim.log.levels.INFO)
+  else
+    clear_inspection_highlight(bufnr)
+    vim.notify("Glean inspection disabled", vim.log.levels.INFO)
+  end
+end
+
+local function stop_and_clear_debounce_timer()
+  if debounce_timer then
+    debounce_timer:stop()
+    debounce_timer:close()
+    debounce_timer = nil
+  end
+end
+
+vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+  group = glean_inspection_augroup,
+  callback = function()
+    if not inspect_enabled then
+      return
+    end
+
+    local bufnr = vim.api.nvim_get_current_buf()
+
+    stop_and_clear_debounce_timer()
+    debounce_timer = vim.defer_fn(function()
+      debounce_timer = nil
+      if inspect_enabled then
+        apply_inspection_highlight(bufnr)
+      end
+    end, 100)
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "BufLeave" }, {
+  group = glean_inspection_augroup,
+  callback = function(args)
+    clear_inspection_highlight(args.buf)
+  end,
+})
+
 -- Command and keymap setup
-local help_message = [[Glean: use 'open' to open the glean file or 'clear' to empty it]]
+local help_message =
+  [[Glean: use 'open' to open the glean file, 'clear' to empty it, or 'inspect' to toggle inspection mode]]
 
 local actions = {
   open = open_glean_file,
   clear = clear_glean_file,
+  inspect = toggle_glean_inspection,
 }
 
 vim.api.nvim_create_user_command("Glean", function(opts)
@@ -298,7 +393,7 @@ vim.api.nvim_create_user_command("Glean", function(opts)
 end, {
   nargs = "?",
   complete = function(arglead, _, _)
-    local options = { "clear", "open" }
+    local options = { "clear", "inspect", "open" }
     return vim.tbl_filter(function(opt)
       return vim.startswith(opt, arglead)
     end, options)
@@ -336,10 +431,16 @@ vim.keymap.set("n", "<leader>glO", "<cmd>split | Glean open<CR>", {
   silent = true,
 })
 
+vim.keymap.set("n", "<leader>gli", toggle_glean_inspection, {
+  desc = "Toggle Glean inspection mode",
+  noremap = true,
+  silent = true,
+})
+
 -- Create the text object mapping for Visual ('x') and Operator-Pending ('o') modes.
 vim.keymap.set(
   { "x", "o" },
   "an",
-  select_treesitter_node,
-  { desc = "Select around treesitter node" }
+  select_nearest_gleanable_node,
+  { desc = "Select around nearest gleanable node" }
 )
