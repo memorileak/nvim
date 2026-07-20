@@ -10,7 +10,9 @@ require("nvim-treesitter").install({
   -- Default development languages
   "rust",
   "javascript",
+  "jsx",
   "typescript",
+  "tsx",
   "python",
   "html",
   "css",
