@@ -3,6 +3,56 @@ local fzflua = require("fzf-lua")
 
 local get_visual_selection = core_functions.get_visual_selection
 local actions = fzflua.actions
+local path = fzflua.path
+local utils = fzflua.utils
+
+local function sel_append_to_qf(selected, opts, is_loclist)
+  local qf_list = {}
+  for i = 1, #selected do
+    local file = path.entry_to_file(selected[i], opts)
+    local text = assert(file.stripped):match(":%d+:%d?%d?%d?%d?:?(.*)$")
+    qf_list[#qf_list + 1] = {
+      bufnr = file.bufnr,
+      filename = file.bufname or file.path or file.uri,
+      lnum = file.line or 0,
+      valid = 1,
+      col = file.col,
+      text = text,
+    }
+  end
+  table.sort(qf_list, function(a, b)
+    if a.filename ~= b.filename then
+      return a.filename < b.filename
+    end
+    if a.lnum ~= b.lnum then
+      return a.lnum < b.lnum
+    end
+    return a.col < b.col
+  end)
+
+  local cmd = utils.get_info().cmd
+  local title =
+    string.format("[FzfLua] %s%s", cmd and cmd .. ": " or "", utils.resume_get("query", opts) or "")
+  if is_loclist then
+    vim.fn.setloclist(0, {}, "a", { nr = "$", items = qf_list, title = title })
+  else
+    vim.fn.setqflist({}, "a", { nr = "$", items = qf_list, title = title })
+  end
+  local opener = opts[is_loclist and "lopen" or "copen"]
+  if type(opener) == "function" then
+    opener(selected, opts)
+  elseif opener ~= false then
+    vim.cmd(opener or (is_loclist and "botright lopen" or "botright copen"))
+  end
+end
+
+local function file_sel_append_to_qf(selected, opts)
+  sel_append_to_qf(selected, opts)
+end
+
+local function file_sel_append_to_ll(selected, opts)
+  sel_append_to_qf(selected, opts, true)
+end
 
 fzflua.setup({
   "hide",
@@ -33,6 +83,10 @@ fzflua.setup({
     files = {
       true,
       ["ctrl-x"] = actions.file_split,
+      ["alt-q"] = actions.file_sel_to_qf,
+      ["alt-Q"] = file_sel_append_to_qf,
+      ["alt-l"] = actions.file_sel_to_ll,
+      ["alt-L"] = file_sel_append_to_ll,
       -- true,        -- uncomment to inherit all the below in your custom config
       -- Pickers inheriting these actions:
       --   files, git_files, git_status, grep, lsp, oldfiles, quickfix, loclist,
