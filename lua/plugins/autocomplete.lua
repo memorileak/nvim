@@ -2,13 +2,20 @@
 local cmp = require("cmp")
 
 local function cmp_mapping_minuet()
-  return cmp.mapping.complete({
-    config = {
-      sources = cmp.config.sources({
-        { name = "minuet" },
-      }),
-    },
-  })
+  return function(fallback)
+    vim.notify("Calling minuet completion...", vim.log.levels.INFO)
+    if
+      not cmp.complete({
+        config = {
+          sources = cmp.config.sources({
+            { name = "minuet" },
+          }),
+        },
+      })
+    then
+      fallback()
+    end
+  end
 end
 
 cmp.setup({

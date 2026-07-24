@@ -2,48 +2,43 @@ local glean = require("core/glean")
 local extract_gleanable_node_at_cursor = glean.extract_gleanable_node_at_cursor
 local extract_visual_selection = glean.extract_visual_selection
 
+local last_ctx_buf = nil
+
 -- Helper function to find or create the unnamed context buffer
 local function get_and_open_unnamed_context_buf(create_if_missing)
-  local target_buf = nil
-
-  -- 1. Find the first buffer that has no name and an empty buftype
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    local name = vim.api.nvim_buf_get_name(bufnr)
-    local buftype = vim.api.nvim_get_option_value("buftype", { buf = bufnr })
-    if name == "" and buftype == "" and vim.api.nvim_buf_is_loaded(bufnr) then
-      target_buf = bufnr
-      break
+  -- If the buffer doesn't exist, create it and open it in a new tab (if allowed)
+  if not last_ctx_buf then
+    if not create_if_missing then
+      return nil
     end
+    local current_tab = vim.api.nvim_get_current_tabpage()
+    vim.cmd("$tabnew")
+    last_ctx_buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_set_current_tabpage(current_tab)
+    return last_ctx_buf
   end
 
-  -- 2. If the buffer already exists, ensure it is visible
-  if target_buf then
-    -- Check if the buffer is displayed in any window across all tabs
-    local win_ids = vim.fn.win_findbuf(target_buf)
+  -- The buffer exists, check if it's still valid and open it in a new tab if not already open
+  if vim.api.nvim_buf_is_valid(last_ctx_buf) then
+    local win_ids = vim.fn.win_findbuf(last_ctx_buf)
     if #win_ids == 0 then
-      -- It is hidden. Open it in a new tab at the end, then switch back.
       local current_tab = vim.api.nvim_get_current_tabpage()
-      -- '$tab sb <bufnr>' opens the specific buffer in a new tab at the far right
-      vim.cmd("$tab sb " .. target_buf)
-      -- Return focus to the original tab (the picking window)
+      vim.cmd("$tab sb " .. last_ctx_buf)
       vim.api.nvim_set_current_tabpage(current_tab)
     end
-    return target_buf
+    return last_ctx_buf
   end
 
-  -- 3. If none exists and we requested creation, create a new tab at the end
-  if create_if_missing then
-    -- Save the current tabpage so we can jump back immediately
-    local current_tab = vim.api.nvim_get_current_tabpage()
-    -- Command `$tabnew` creates a new tab at the far right with a new unnamed buffer
-    vim.cmd("$tabnew")
-    local new_buf = vim.api.nvim_get_current_buf()
-    -- Switch focus back to the original tab so your cursor never leaves your active file
-    vim.api.nvim_set_current_tabpage(current_tab)
-    return new_buf
+  -- The buffer is no longer valid, reset it and create a new one (if allowed)
+  if not create_if_missing then
+    return nil
   end
 
-  return nil
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  vim.cmd("$tabnew")
+  last_ctx_buf = vim.api.nvim_get_current_buf()
+  vim.api.nvim_set_current_tabpage(current_tab)
+  return last_ctx_buf
 end
 
 -- Collect extracted (node or selection) lines and append them to the unnamed context buffer
@@ -138,11 +133,12 @@ Guidelines:
 2. Use <externalContext> strictly as reference material to infer available methods, class structures, function arguments, and types.
 3. NEVER generate code inside <externalContext> or repeat/copy large blocks from it unless directly calling those methods/types.
 4. Make sure you have maintained the user's existing whitespace and indentation at <cursorPosition>. This is REALLY IMPORTANT!
-5. Provide multiple completion options when possible.
-6. Return completions separated by the marker <endCompletion>.
-7. The returned message will be further parsed and processed. DO NOT include additional comments or markdown code block fences. Return the result directly.
-8. Keep each completion option concise, limiting it to a single line or a few lines.
-9. Create entirely new code completion that DO NOT REPEAT OR COPY any user's existing code around <cursorPosition>.
+5. If there is a comment section right before the <cursorPosition> describing the intended logic, please carefully read the instruction in that comment section and strictly follow its guide. The code generated MUST cover the whole logic that the comment section describes.
+6. If there is NO comment section describing the logic provided, keep each completion option concise, limiting it to a single line or a few lines.
+7. Provide multiple completion options when possible.
+8. Return completions separated by the marker <endCompletion>.
+9. The returned message will be further parsed and processed. DO NOT include additional comments or markdown code block fences. Return the result directly.
+10. Create entirely new code completion that DO NOT REPEAT OR COPY any user's existing code around <cursorPosition>.
 ]]
 
 local few_shots_prefix_first_with_external = {
@@ -241,11 +237,16 @@ local function setup_minuet()
     cmp = {
       enable_auto_complete = false,
     },
+    add_single_line_entry = false,
+    request_timeout = 60,
     provider = "claude",
     provider_options = {
       claude = {
+        -- model = "claude-sonnet-4-5",
         model = "claude-haiku-4-5",
         api_key = "ANTHROPIC_API_KEY",
+        max_tokens = 1024,
+        stream = false,
         system = {
           template = mc.default_system_prefix_first.template,
           prompt = prompt,
@@ -260,6 +261,8 @@ local function setup_minuet()
       openai = {
         model = "gpt-5.4-mini",
         api_key = "OPENAI_API_KEY",
+        max_completion_tokens = 1024,
+        stream = false,
         system = {
           template = mc.default_system_prefix_first.template,
           prompt = prompt,
