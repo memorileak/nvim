@@ -41,6 +41,33 @@ local function get_and_open_unnamed_context_buf(create_if_missing)
   return last_ctx_buf
 end
 
+-- Helper function to empty and close the unnamed context buffer
+local function close_unnamed_context_buf()
+  -- 1. Check if the buffer variable exists and is valid
+  if not last_ctx_buf or not vim.api.nvim_buf_is_valid(last_ctx_buf) then
+    last_ctx_buf = nil
+    vim.notify("No valid context buffer to close.", vim.log.levels.WARN)
+    return
+  end
+
+  -- 2. Find and close all windows displaying this buffer
+  local windows = vim.fn.win_findbuf(last_ctx_buf)
+  for _, win in ipairs(windows) do
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true) -- true forces the close
+    end
+  end
+
+  -- 3. Safely wipe out the buffer now that windows are gone
+  if vim.api.nvim_buf_is_valid(last_ctx_buf) then
+    vim.api.nvim_buf_delete(last_ctx_buf, { force = true })
+  end
+
+  -- 4. Clear the reference
+  last_ctx_buf = nil
+  vim.notify("Context buffer closed and cleared.", vim.log.levels.INFO)
+end
+
 -- Collect extracted (node or selection) lines and append them to the unnamed context buffer
 local function collect_to_context_buf(extracted)
   local lines = vim.split(extracted.text, "\n", { plain = true })
@@ -108,6 +135,12 @@ vim.keymap.set("n", "gL", collect_node_at_cursor, {
 
 vim.keymap.set("x", "gL", exit_visual_mode_and_collect_selection, {
   desc = "Collect selected text to the context buffer",
+  noremap = true,
+  silent = true,
+})
+
+vim.keymap.set("n", "<leader>gL", close_unnamed_context_buf, {
+  desc = "Close and clear the context buffer",
   noremap = true,
   silent = true,
 })
