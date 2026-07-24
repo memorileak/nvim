@@ -89,6 +89,12 @@ require("lazy").setup({
   -- Github Copilot
   { "github/copilot.vim" },
 
+  -- Minuet AI
+  {
+    "milanglacier/minuet-ai.nvim",
+    config = require("plugins/minuet").setup_minuet,
+  },
+
   -- Notifications
   { "rcarriga/nvim-notify" },
 

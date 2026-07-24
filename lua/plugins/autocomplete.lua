@@ -1,12 +1,23 @@
 -- Set up nvim-cmp.
 local cmp = require("cmp")
 
+local function cmp_mapping_minuet()
+  return cmp.mapping.complete({
+    config = {
+      sources = cmp.config.sources({
+        { name = "minuet" },
+      }),
+    },
+  })
+end
+
 cmp.setup({
   window = {
     -- completion = cmp.config.window.bordered(),
     -- documentation = cmp.config.window.bordered(),
   },
   mapping = cmp.mapping.preset.insert({
+    ["<C-l>"] = cmp_mapping_minuet(),
     ["<C-b>"] = cmp.mapping.scroll_docs(-4),
     ["<C-f>"] = cmp.mapping.scroll_docs(4),
     ["<C-Space>"] = cmp.mapping.complete(),
@@ -18,6 +29,7 @@ cmp.setup({
   }),
   sources = cmp.config.sources({
     -- High priority sources
+    { name = "minuet" },
     { name = "path" },
     { name = "buffer" },
     {
@@ -38,6 +50,7 @@ cmp.setup({
         tags = "[Tag]",
         buffer = "[Buf]",
         cmdline = "[Cmd]",
+        minuet = "[AI]",
       }
       vim_item.menu = menu_labels[entry.source.name] or entry.source.name
       return vim_item
