@@ -122,13 +122,12 @@ local function get_nearest_gleanable_parent(filetype, node)
   return nil
 end
 
--- Glean the current treesitter node
-local function glean_node()
+-- Extract the nearest gleanable node at the cursor position
+local function extract_gleanable_node_at_cursor()
   local bufnr = vim.api.nvim_get_current_buf()
   local node = vim.treesitter.get_node({ bufnr = bufnr })
 
   if not node then
-    vim.notify("No treesitter node found at cursor", vim.log.levels.WARN)
     return nil
   end
 
@@ -138,17 +137,53 @@ local function glean_node()
   -- Find the nearest gleanable parent node, or use the current node if none found
   local target_node = get_nearest_gleanable_parent(ft, node) or node
 
+  -- Get node type
+  local type = target_node:type()
+
   -- Extract necessary data
   local text = vim.treesitter.get_node_text(target_node, bufnr)
 
   -- Get absolute file path
-  local file_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
+  local abs_file_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
+
+  -- Also get relative file path from the current working directory
+  local rel_file_path = vim.fn.fnamemodify(abs_file_path, ":.")
 
   -- Get node range. Note: TS ranges are 0-indexed.
   -- We add 1 to make them 1-indexed (standard editor line/col numbers).
   local start_row, start_col, end_row, end_col = target_node:range()
-  local range_str =
-    string.format("L%d:C%d - L%d:C%d", start_row + 1, start_col + 1, end_row + 1, end_col + 1)
+
+  return {
+    text = text,
+    type = type,
+    line_start = start_row + 1,
+    line_end = end_row + 1,
+    col_start = start_col + 1,
+    col_end = end_col + 1,
+    filetype = ft,
+    abs_file_path = abs_file_path,
+    rel_file_path = rel_file_path,
+  }
+end
+
+-- Glean the current treesitter node
+local function glean_node()
+  local extracted_node = extract_gleanable_node_at_cursor()
+
+  if not extracted_node then
+    vim.notify("No treesitter node found at cursor", vim.log.levels.WARN)
+    return
+  end
+
+  local text = extracted_node.text
+  local type = extracted_node.type
+  local file_path = extracted_node.abs_file_path
+  local ft = extracted_node.filetype
+  local line_start = extracted_node.line_start
+  local line_end = extracted_node.line_end
+  local col_start = extracted_node.col_start
+  local col_end = extracted_node.col_end
+  local range_str = string.format("L%d:C%d - L%d:C%d", line_start, col_start, line_end, col_end)
 
   -- Construct the AI-friendly Markdown payload
   local payload = string.format(
@@ -162,22 +197,18 @@ local function glean_node()
   -- Append to the glean file
   append_to_glean_file(payload)
 
-  vim.notify(
-    "Collected node: " .. target_node:type() .. " (" .. range_str .. ")",
-    vim.log.levels.INFO
-  )
+  vim.notify("Collected node: " .. type .. " (" .. range_str .. ") to file", vim.log.levels.INFO)
 end
 
--- Glean the current visual selection
-local function glean_selection()
+-- Extract the current visual selection and its metadata
+local function extract_visual_selection()
   -- Grab the start and end positions using getpos
   -- getpos returns { bufnum, lnum (1-indexed), col (1-indexed), off }
   local pos1 = vim.fn.getpos("'<")
   local pos2 = vim.fn.getpos("'>")
 
   if pos1[2] == 0 or pos2[2] == 0 then
-    vim.notify("No visual selection found.", vim.log.levels.WARN)
-    return
+    return nil
   end
 
   -- Use Neovim's native getregion to safely extract exactly what is highlighted
@@ -187,9 +218,45 @@ local function glean_selection()
 
   -- Gather metadata
   local bufnr = vim.api.nvim_get_current_buf()
-  local file_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
-  local ft = vim.bo[bufnr].filetype
-  local range_str = string.format("L%d:C%d - L%d:C%d", pos1[2], pos1[3], pos2[2], pos2[3])
+  local filetype = vim.bo[bufnr].filetype
+  local abs_file_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
+  local rel_file_path = vim.fn.fnamemodify(abs_file_path, ":.")
+
+  local line_start = pos1[2]
+  local line_end = pos2[2]
+  local col_start = pos1[3]
+  local col_end = pos2[3]
+
+  return {
+    text = text,
+    type = "visual_selection",
+    line_start = line_start,
+    line_end = line_end,
+    col_start = col_start,
+    col_end = col_end,
+    filetype = filetype,
+    abs_file_path = abs_file_path,
+    rel_file_path = rel_file_path,
+  }
+end
+
+-- Glean the current visual selection
+local function glean_selection()
+  local extracted_selection = extract_visual_selection()
+
+  if not extracted_selection then
+    vim.notify("No visual selection found.", vim.log.levels.WARN)
+    return
+  end
+
+  local text = extracted_selection.text
+  local file_path = extracted_selection.abs_file_path
+  local ft = extracted_selection.filetype
+  local line_start = extracted_selection.line_start
+  local line_end = extracted_selection.line_end
+  local col_start = extracted_selection.col_start
+  local col_end = extracted_selection.col_end
+  local range_str = string.format("L%d:C%d - L%d:C%d", line_start, col_start, line_end, col_end)
 
   -- Construct the AI-friendly Markdown payload
   -- Because getpos returns 1-indexed values natively, we don't need to add + 1
@@ -204,7 +271,7 @@ local function glean_selection()
   -- Append to the glean file
   append_to_glean_file(payload)
 
-  vim.notify("Collected visual selection (" .. range_str .. ")", vim.log.levels.INFO)
+  vim.notify("Collected visual selection (" .. range_str .. ") to file", vim.log.levels.INFO)
 end
 
 -- Trigger esc to exit visual mode and then glean the selection
@@ -444,3 +511,10 @@ vim.keymap.set(
   select_nearest_gleanable_node,
   { desc = "Select around nearest gleanable node" }
 )
+
+local M = {}
+
+M.extract_gleanable_node_at_cursor = extract_gleanable_node_at_cursor
+M.extract_visual_selection = extract_visual_selection
+
+return M
