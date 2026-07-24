@@ -118,10 +118,97 @@ vim.keymap.set("x", "gL", exit_visual_mode_and_collect_selection, {
 })
 
 -- Setup for minuet chat input template with external context injection
+local prompt = [[
+You are an AI code completion engine. Provide contextually appropriate completions:
+- Code completions in code context
+- Comment/documentation text in comments
+- String content in string literals
+- Prose in markdown/documentation files
+
+Input markers:
+- <externalContext>: Read-only reference code gleaned from other project files (classes, methods, type definitions)
+- <contextBeforeCursor>: Context before cursor
+- <cursorPosition>: Current cursor location
+- <contextAfterCursor>: Context after cursor
+]]
+
+local guidelines = [[
+Guidelines:
+1. Offer completions after the <cursorPosition> marker.
+2. Use <externalContext> strictly as reference material to infer available methods, class structures, function arguments, and types.
+3. NEVER generate code inside <externalContext> or repeat/copy large blocks from it unless directly calling those methods/types.
+4. Make sure you have maintained the user's existing whitespace and indentation at <cursorPosition>. This is REALLY IMPORTANT!
+5. Provide multiple completion options when possible.
+6. Return completions separated by the marker <endCompletion>.
+7. The returned message will be further parsed and processed. DO NOT include additional comments or markdown code block fences. Return the result directly.
+8. Keep each completion option concise, limiting it to a single line or a few lines.
+9. Create entirely new code completion that DO NOT REPEAT OR COPY any user's existing code around <cursorPosition>.
+]]
+
+local few_shots_prefix_first_with_external = {
+  {
+    role = "user",
+    content = [[
+# language: javascript
+<externalContext>
+// Source: src/utils/string_formatter.js (Lines: 1-4)
+class StringFormatter {
+    static formatUpper(str) { return str.toUpperCase(); }
+    static removeWhitespace(str) { return str.replace(/\s+/g, ''); }
+}
+</externalContext>
+<contextBeforeCursor>
+function transformData(data, options) {
+    const result = [];
+    for (let item of data) {
+        // Transform each item based on options using StringFormatter
+        <cursorPosition>
+<contextAfterCursor>
+    return result;
+}
+
+const processedData = transformData(rawData, {
+    uppercase: true,
+    removeSpaces: false
+});]],
+  },
+  {
+    role = "assistant",
+    content = [[
+let processed = item;
+        if (options.uppercase) {
+            processed = StringFormatter.formatUpper(processed);
+        }
+        if (options.removeSpaces) {
+            processed = StringFormatter.removeWhitespace(processed);
+        }
+        result.push(processed);
+    }
+<endCompletion>
+if (typeof item === 'string') {
+            let processed = item;
+            if (options.uppercase) {
+                processed = StringFormatter.formatUpper(processed);
+            }
+            if (options.removeSpaces) {
+                processed = StringFormatter.removeWhitespace(processed);
+            }
+            result.push(processed);
+        } else {
+            result.push(item);
+        }
+    }
+<endCompletion>
+]],
+  },
+}
+
 local chat_input_template = table.concat({
   "{{{language}}}",
   "{{{tab}}}",
+  "<externalContext>",
   "{{{external_context}}}",
+  "</externalContext>",
   "<contextBeforeCursor>",
   "{{{context_before_cursor}}}<cursorPosition>",
   "<contextAfterCursor>",
@@ -140,7 +227,7 @@ local function external_context(context_before_cursor, context_after_cursor, opt
 
   -- If the buffer has text, wrap it in XML tags for the AI
   if content and content:match("%S") then
-    return "<externalContext>\n" .. content .. "\n</externalContext>\n"
+    return content
   end
 
   return ""
@@ -159,9 +246,12 @@ local function setup_minuet()
       claude = {
         model = "claude-haiku-4-5",
         api_key = "ANTHROPIC_API_KEY",
-        -- Force Prefix-First system prompt & few-shots examples
-        system = mc.default_system_prefix_first,
-        few_shots = mc.default_few_shots_prefix_first,
+        system = {
+          template = mc.default_system_prefix_first.template,
+          prompt = prompt,
+          guidelines = guidelines,
+        },
+        few_shots = few_shots_prefix_first_with_external,
         chat_input = {
           template = chat_input_template,
           external_context = external_context,
@@ -170,9 +260,12 @@ local function setup_minuet()
       openai = {
         model = "gpt-5.4-mini",
         api_key = "OPENAI_API_KEY",
-        -- Force Prefix-First system prompt & few-shots examples
-        system = mc.default_system_prefix_first,
-        few_shots = mc.default_few_shots_prefix_first,
+        system = {
+          template = mc.default_system_prefix_first.template,
+          prompt = prompt,
+          guidelines = guidelines,
+        },
+        few_shots = few_shots_prefix_first_with_external,
         chat_input = {
           template = chat_input_template,
           external_context = external_context,
