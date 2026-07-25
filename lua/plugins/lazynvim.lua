@@ -98,6 +98,14 @@ require("lazy").setup({
   -- Notifications
   { "rcarriga/nvim-notify" },
 
+  -- Lualine
+  {
+    "nvim-lualine/lualine.nvim",
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
+    },
+  },
+
   -- Indentation guides
   {
     "lukas-reineke/indent-blankline.nvim",
