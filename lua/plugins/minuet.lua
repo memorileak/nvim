@@ -162,23 +162,22 @@ Input markers:
 
 local guidelines = [[
 Guidelines:
-1. Offer completions after the <cursorPosition> marker.
-2. Use <externalContext> strictly as reference material to infer available methods, class structures, function arguments, and types.
-3. NEVER generate code inside <externalContext> or repeat/copy large blocks from it unless directly calling those methods/types.
-4. Make sure you have maintained the user's existing whitespace and indentation at <cursorPosition>. This is REALLY IMPORTANT!
-5. If there is a comment section right before the <cursorPosition> describing the intended logic, please carefully read the instruction in that comment section and strictly follow its guide. The code generated MUST cover the whole logic that the comment section describes.
-6. If there is NO comment section describing the logic provided, keep each completion option concise, limiting it to a single line or a few lines.
-7. Provide multiple completion options when possible.
-8. Return completions separated by the marker <endCompletion>.
-9. The returned message will be further parsed and processed. DO NOT include additional comments or markdown code block fences. Return the result directly.
-10. Create entirely new code completion that DO NOT REPEAT OR COPY any user's existing code around <cursorPosition>.
+1. The user will ALWAYS provide instructions in a comment block enclosed by <TODO> and </TODO> immediately preceding the <cursorPosition>.
+2. Your primary task is to carefully read the instructions inside the <TODO> block and generate the COMPLETE code implementation that fulfills ALL requirements described within it.
+3. Do NOT generate partial snippets or single lines. Output the full block of logic required by the <TODO> block.
+4. Use <externalContext> strictly as reference material (to infer available methods, class structures, function arguments, and types) needed to fulfill the <TODO>. Do not repeat, redefine, or modify code from <externalContext>.
+5. Make sure you maintain the user's existing whitespace and indentation at <cursorPosition>. This is REALLY IMPORTANT!
+6. Provide multiple completion options if alternative implementations exist, separated by the marker <endCompletion>.
+7. DO NOT include additional commentary, explanations, or markdown code block fences in your output. Return ONLY the raw code to be inserted at <cursorPosition>.
 ]]
 
 local few_shots_prefix_first_with_external = {
   {
     role = "user",
     content = [[
-# language: javascript
+// language: javascript
+// indentation: use 4 spaces for a tab
+
 <externalContext>
 // Source: src/utils/string_formatter.js (Lines: 1-4)
 class StringFormatter {
@@ -186,11 +185,20 @@ class StringFormatter {
     static removeWhitespace(str) { return str.replace(/\s+/g, ''); }
 }
 </externalContext>
+
 <contextBeforeCursor>
 function transformData(data, options) {
     const result = [];
     for (let item of data) {
-        // Transform each item based on options using StringFormatter
+        // <TODO>
+        // Transform each item based on `options`, using `StringFormatter`:
+        // 1. Read `options` object to determine transformations
+        // 2. Perform transformations on `item` by this order:
+        //   - If `options.uppercase` is true, convert item to uppercase using `StringFormatter.formatUpper`
+        //   - If `options.removeSpaces` is true, remove whitespace using `StringFormatter.removeWhitespace`
+        // 3. If no transformations are specified, keep the item unchanged
+        // 4. Push the transformed item to the result array
+        // </TODO>
         <cursorPosition>
 <contextAfterCursor>
     return result;
@@ -234,10 +242,10 @@ if (typeof item === 'string') {
 
 local chat_input_template = table.concat({
   "{{{language}}}",
-  "{{{tab}}}",
+  "{{{tab}}}\n",
   "<externalContext>",
   "{{{external_context}}}",
-  "</externalContext>",
+  "</externalContext>\n",
   "<contextBeforeCursor>",
   "{{{context_before_cursor}}}<cursorPosition>",
   "<contextAfterCursor>",
@@ -272,6 +280,7 @@ local function setup_minuet()
     },
     add_single_line_entry = false,
     request_timeout = 60,
+    n_completions = 2,
     provider = "claude",
     provider_options = {
       claude = {
