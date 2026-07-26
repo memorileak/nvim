@@ -1,4 +1,4 @@
-local core_functions = require("core/functions")
+local core_functions = require("core.functions")
 local fzflua = require("fzf-lua")
 
 local get_visual_selection = core_functions.get_visual_selection

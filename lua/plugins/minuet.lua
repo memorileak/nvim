@@ -1,4 +1,7 @@
-local glean = require("core/glean")
+local core_functions = require("core.functions")
+local glean = require("core.glean")
+
+local merge_tables = core_functions.merge_tables
 local extract_gleanable_node_at_cursor = glean.extract_gleanable_node_at_cursor
 local extract_visual_selection = glean.extract_visual_selection
 
@@ -274,6 +277,19 @@ local function setup_minuet()
   local minuet = require("minuet")
   local mc = require("minuet.config")
 
+  local default_provider_options = {
+    system = {
+      template = mc.default_system_prefix_first.template,
+      prompt = prompt,
+      guidelines = guidelines,
+    },
+    few_shots = few_shots_prefix_first_with_external,
+    chat_input = {
+      template = chat_input_template,
+      external_context = external_context,
+    },
+  }
+
   minuet.setup({
     cmp = {
       enable_auto_complete = false,
@@ -283,39 +299,19 @@ local function setup_minuet()
     n_completions = 2,
     provider = "claude",
     provider_options = {
-      claude = {
+      claude = merge_tables({
         -- model = "claude-sonnet-4-5",
         model = "claude-haiku-4-5",
         api_key = "ANTHROPIC_API_KEY",
         max_tokens = 1024,
         stream = false,
-        system = {
-          template = mc.default_system_prefix_first.template,
-          prompt = prompt,
-          guidelines = guidelines,
-        },
-        few_shots = few_shots_prefix_first_with_external,
-        chat_input = {
-          template = chat_input_template,
-          external_context = external_context,
-        },
-      },
-      openai = {
+      }, default_provider_options),
+      openai = merge_tables({
         model = "gpt-5.4-mini",
         api_key = "OPENAI_API_KEY",
         max_completion_tokens = 1024,
         stream = false,
-        system = {
-          template = mc.default_system_prefix_first.template,
-          prompt = prompt,
-          guidelines = guidelines,
-        },
-        few_shots = few_shots_prefix_first_with_external,
-        chat_input = {
-          template = chat_input_template,
-          external_context = external_context,
-        },
-      },
+      }, default_provider_options),
     },
   })
 end
