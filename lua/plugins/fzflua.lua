@@ -105,6 +105,11 @@ fzflua.setup({
       -- ['alt-f']       = actions.toggle_follow,
     },
   },
+  buffers = {
+    actions = {
+      ["ctrl-x"] = actions.file_split,
+    },
+  },
   tags = {
     fzf_opts = {
       ["--multi"] = true,
