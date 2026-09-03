@@ -3,7 +3,7 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-FD_ARGS=("-t" "f")
+FD_ARGS=("-a" "-t" "f")
 
 # Process command-line arguments as file extensions
 for ext in "$@"; do
@@ -30,3 +30,11 @@ echo "Generating tags file for ${#files[@]} files..."
 printf "%s\n" "${files[@]}" | ctags --quiet -L - -f .tags
 
 echo "Tags file '.tags' successfully generated."
+
+# If in the current directory there is a rusty-tags.vi file,
+# append its content to our generated .tags file
+if [ -f "rusty-tags.vi" ]; then
+  echo "Appending rusty-tags.vi to '.tags' file..."
+  cat rusty-tags.vi >>.tags
+  echo "Appended rusty-tags.vi to '.tags' file."
+fi
