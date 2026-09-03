@@ -36,3 +36,4 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 })
 
 vim.g.ctags_extensions = "js ts"
+vim.g.ctags_shell = ".nvim/generate_ctags.sh"
