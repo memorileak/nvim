@@ -29,12 +29,19 @@ echo "Generating tags file for ${#files[@]} files..."
 
 printf "%s\n" "${files[@]}" | ctags --quiet -L - -f .tags
 
-echo "Tags file '.tags' successfully generated."
+echo "Tags file .tags successfully generated."
+
+dedup() {
+  if [ -f "$1" ]; then
+    awk '!visited[$0]++' "$1" | sponge "$1"
+  fi
+}
 
 # If in the current directory there is a rusty-tags.vi file,
 # append its content to our generated .tags file
 if [ -f "rusty-tags.vi" ]; then
-  echo "Appending rusty-tags.vi to '.tags' file..."
+  echo "Appending rusty-tags.vi to .tags file..."
   cat rusty-tags.vi >>.tags
-  echo "Appended rusty-tags.vi to '.tags' file."
+  dedup .tags
+  echo "Appended rusty-tags.vi to .tags file."
 fi
