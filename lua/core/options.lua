@@ -21,7 +21,7 @@ vim.opt.foldenable = false
 vim.opt.foldmethod = "manual"
 
 vim.opt.maxmempattern = 8192
-vim.opt.tags = { "./tags;", "./.tags;", "tags;", ".tags;", "rusty-tags.vi" }
+vim.opt.tags = { "./tags;", "./.tags;", "tags;", ".tags;" }
 
 -- Allow project-specific configuration files:
 -- .nvim.lua, .nvimrc, .exrc
