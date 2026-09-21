@@ -180,48 +180,27 @@ keymap("n", "<leader>bs", fzflua.treesitter, opts)
 
 -- Find tags for the current word under the cursor in the current project
 keymap("n", "gd", function()
-  local ctags_file = vim.fn.getcwd() .. "/.tags"
-  ctags_file = ctags_file:gsub("^/+", "/")
-  fzflua.tags({
-    query = vim.fn.expand("<cword>"),
-    cwd = "/",
-    ctags_file = ctags_file,
-  })
+  fzflua.tags({ query = vim.fn.expand("<cword>") })
 end, opts)
 
 keymap("x", "gd", function()
-  local ctags_file = vim.fn.getcwd() .. "/.tags"
-  ctags_file = ctags_file:gsub("^/+", "/")
   local text = get_visual_selection()
-  fzflua.tags({ query = text, cwd = "/", ctags_file = ctags_file })
+  fzflua.tags({ query = text })
 end, opts)
 
 -- Find tags for the current word under the cursor in the current buffer
 keymap("n", "gD", function()
-  local ctags_file = vim.fn.getcwd() .. "/.tags"
-  ctags_file = ctags_file:gsub("^/+", "/")
-  fzflua.btags({ query = vim.fn.expand("<cword>"), cwd = "/", ctags_file = ctags_file })
+  fzflua.btags({ query = vim.fn.expand("<cword>") })
 end, opts)
 
 keymap("x", "gD", function()
-  local ctags_file = vim.fn.getcwd() .. "/.tags"
-  ctags_file = ctags_file:gsub("^/+", "/")
   local text = get_visual_selection()
-  fzflua.btags({ query = text, cwd = "/", ctags_file = ctags_file })
+  fzflua.btags({ query = text })
 end, opts)
 
 -- Grep tags for the current word under the cursor
-keymap("n", "gw", function()
-  local ctags_file = vim.fn.getcwd() .. "/.tags"
-  ctags_file = ctags_file:gsub("^/+", "/")
-  fzflua.tags_grep_cword({ cwd = "/", ctags_file = ctags_file })
-end, opts)
-
-keymap("x", "gw", function()
-  local ctags_file = vim.fn.getcwd() .. "/.tags"
-  ctags_file = ctags_file:gsub("^/+", "/")
-  fzflua.tags_grep_visual({ cwd = "/", ctags_file = ctags_file })
-end, opts)
+keymap("n", "gw", fzflua.tags_grep_cword, opts)
+keymap("x", "gw", fzflua.tags_grep_visual, opts)
 
 -- Live grep for the current word under the cursor in the current project
 keymap("n", "gs", function()
