@@ -3,7 +3,7 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-FD_ARGS=("-a" "-t" "f")
+FD_ARGS=("-t" "f")
 
 # Process command-line arguments as file extensions
 for ext in "$@"; do
@@ -24,20 +24,20 @@ fi
 
 # Run universal-ctags using standard input list
 # -L - tells ctags to read the file list from stdin
-# -f .tags explicitly names the output file (overwriting it)
+# -f tags explicitly names the output file (overwriting it)
 echo "Generating tags file for ${#files[@]} files..."
 
-printf "%s\n" "${files[@]}" | ctags --quiet -L - -f .tags
+printf "%s\n" "${files[@]}" | ctags --quiet -L - -f tags
 
 if [ -f "rusty-tags.vi" ]; then
-  cat rusty-tags.vi >>.tags
+  cat rusty-tags.vi >> tags
 fi
 
 if command -v rustc >/dev/null 2>&1; then
   RUST_SYSROOT=$(rustc --print sysroot)
   RUST_TAGS_FILE="$RUST_SYSROOT/lib/rustlib/src/rust/library/rusty-tags.vi"
   if [ -f "$RUST_TAGS_FILE" ]; then
-    cat "$RUST_TAGS_FILE" >>.tags
+    cat "$RUST_TAGS_FILE" >> tags
   fi
 fi
 
@@ -47,6 +47,6 @@ dedup() {
   fi
 }
 
-dedup .tags
+dedup tags
 
-echo "Tags file .tags successfully generated."
+echo "Successfully generated tags file."
