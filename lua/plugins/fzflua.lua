@@ -6,6 +6,33 @@ local actions = fzflua.actions
 local path = fzflua.path
 local utils = fzflua.utils
 
+-- Override fzf-lua.path.entry_to_ctag to support ctags with file names start with tilde (~)
+---@param raw string
+---@param opts table
+---@return fzf-lua.path.Entry
+path.entry_to_ctag = function(raw, opts) 
+  assert(opts._ctag)
+  local M = path
+  local _, file, excmd = raw:match("([^\t]+)\t([^\t]+)\t(.*)")
+  if not file or not excmd then return {} end
+  file = file:match(".*" .. utils.nbsp .. "(.+)$") or file
+  file = M.tilde_to_HOME(file)
+  local cwd = opts.cwd or opts._cwd
+  if cwd and not M.is_absolute(file) then file = M.join({ cwd, file }) end
+  if opts.path_shorten then file = M.lengthen(file) end
+  local line, tag = M.parse_ctag_excmd(excmd)
+  return {
+    path = file,
+    ctag = tag,
+    line = line or 0,
+    col = 0,
+    stripped = string.format("%s:%s %s", file, line and line .. ":" or "",
+      -- remove ctag ^$ prefix/postfix so qflist can have ts highlights
+      utils.regex_strip_anchors(tag) or ""),
+    debug = opts.debug and raw:match("^%[DEBUG]") and raw or nil,
+  } ---@as fzf-lua.path.Entry
+end
+
 local function sel_append_to_qf(selected, opts, is_loclist)
   local qf_list = {}
   for i = 1, #selected do
